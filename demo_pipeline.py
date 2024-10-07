@@ -9,6 +9,7 @@ logger_connection = psycopg2.connect(database=pg_dwh_db, user=pg_dwh_user, passw
                                      host=pg_dwh_host)
 logger = ads.Logger(logger_connection, logging.INFO, "AdsLogger", "LOGS", "LOGS_details")
 logger.info("Début de la démonstration...")
+logger.disable_logging()
 
 # On active le timer, les requêtes seront chronométrées
 ads.set_timer(True)
@@ -39,6 +40,8 @@ SELECT tenantname, taille, unite, fichier
 FROM onyx_qs."diskcheck" LIMIT 10
 '''
 
+logger.enable_logging()
+
 # Attention si on passe une liste de lignes à insérer à un pipeline simple, elles seront insérées une par une
 # Loguée une par une et timée une par une
 pipeline = ads.pipeline({'db_source': source, 'query_source': query, 'db_destination': destination,
@@ -50,7 +53,7 @@ pipelineBulk = ads.pipelineBulk({'db_source': source, 'query_source': query, 'db
                          'table': 'demo_pipeline', 'cols': ['tenantname', 'taille', 'unite', 'fichier']}, logger)
 pipelineBulk.run()
 
-# Et si la source est un tableau
+logger.info("Et si la source est un tableau ?")
 source = [
     ('ADS', 120.5, 'Mo', 'test1'),
     ('ADS', 130.7, 'Mo', 'test2'),
