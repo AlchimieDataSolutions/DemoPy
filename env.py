@@ -17,3 +17,9 @@ mssql_dwh_pwd = str(os.getenv('mssql_dwh_pwd'))
 mssql_dwh_host = str(os.getenv('mssql_dwh_host'))
 mssql_dwh_port = str(os.getenv('mssql_dwh_port'))
 
+
+ORISHA_PROD_TENANTDOMAIN = str(os.getenv('ORISHA_PROD_TENANTDOMAIN'))
+ORISHA_PROD_TENANTID = str(os.getenv('ORISHA_PROD_TENANTID'))
+ORISHA_PROD_TENANTNAME = str(os.getenv('ORISHA_PROD_TENANTNAME'))
+ORISHA_PROD_TENANTUSERNAME = str(os.getenv('ORISHA_PROD_TENANTUSERNAME'))
+ORISHA_PROD_TENANTPASSWORD = str(os.getenv('ORISHA_PROD_TENANTPASSWORD'))
