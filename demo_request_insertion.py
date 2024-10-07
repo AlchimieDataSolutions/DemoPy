@@ -45,5 +45,4 @@ print(list(data))
 
 # Suppression de la table
 source.exec(''' DROP TABLE demo_insert ''')
-
 logger.info("Fin de la démonstration.")

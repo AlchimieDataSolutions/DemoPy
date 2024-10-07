@@ -51,7 +51,6 @@ pipelineBulk = ads.pipelineBulk({'db_source': source, 'query_source': query, 'db
 pipelineBulk.run()
 
 # Et si la source est un tableau
-
 source = [
     ('ADS', 120.5, 'Mo', 'test1'),
     ('ADS', 130.7, 'Mo', 'test2'),
@@ -64,9 +63,6 @@ source = [
 pipeline = ads.pipelineTableau({'tableau': source, 'db_destination': destination, 'table': 'demo_pipeline',
                  'cols': ['tenantname', 'taille', 'unite', 'fichier']}, logger)
 pipeline.run()
-
-
-
 
 # Si vous voulez insérer plusieurs lignes, utilisez plutôt
 pipelineBulk = ads.pipelineTableauBulk({'tableau': source, 'db_destination': destination, 'table': 'demo_pipeline',
