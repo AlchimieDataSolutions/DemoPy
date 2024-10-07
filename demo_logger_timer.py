@@ -25,7 +25,7 @@ source.connect()
 
 # Celle-ci le sera dès que le flux (générateur) renvoyé par sqlQuery sera consommé
 data1 = source.sqlQuery('''SELECT tenantname, fichier FROM onyx_qs."diskcheck" LIMIT 10''')
-print(f"First read: {list(data1)}")
+print(f"Première requête: {list(data1)}")
 # Après ce print viennent les notifications d'insertions des logs en base et le temps d'eéxuction
 
 # Voici comment désactiver les logs
@@ -33,7 +33,7 @@ logger.disable_logging()
 logger.info("Ceci est un message d'information qui n'est pas censé s'afficher.")
 
 data2 = source.sqlQuery('''SELECT tenantname, fichier FROM onyx_qs."diskcheck" LIMIT 10''')
-print(f"Second read: {list(data2)}")
+print(f"Seconde requête: {list(data2)}")
 # Ici pas d'insertions en base de logs non plus, et pas de temps d'exécutions affiché
 
 logger.enable_logging()

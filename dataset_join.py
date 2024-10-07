@@ -8,7 +8,6 @@ tbl1 = [
 ]
 
 df1 = pl.DataFrame(tbl1, schema=["key", "value1"], orient="row")
-
 tbl2 = [
     ("A", "10"),
     ("B", "20"),

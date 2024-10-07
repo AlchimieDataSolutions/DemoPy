@@ -7,13 +7,10 @@ tbl = [
     ("D", "2"),
     ("B", "4")
 ]
-
 df = pl.DataFrame(tbl, schema=["key", "value"], orient="row")
 
 df = df.sort("key")
-
 print(df)
 
 df = df.sort("value")
-
 print(df)

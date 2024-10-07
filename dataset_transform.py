@@ -7,8 +7,8 @@ tbl = [
     ("CQSD d", "4"),
     ("CDAS   AZDASD", "5")
 ]
-
 df = pl.DataFrame(tbl, schema=["key", "value"], orient="row")
+print(df)
 
 #Suppression des espaces sur une colonne
 df = df.with_columns(pl.col("key").str.replace_all(" ", ""))
