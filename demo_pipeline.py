@@ -4,7 +4,7 @@ from env import *
 import logging
 import psycopg2
 
-# On établit une connexion pour le logger pour qu'il puisse écrire en base
+# Établit une connexion pour que le logger puisse écrire en base
 logger_connection = psycopg2.connect(database=pg_dwh_db, user=pg_dwh_user, password=pg_dwh_pwd, port=pg_dwh_port,
                                      host=pg_dwh_host)
 logger = ads.Logger(logger_connection, logging.INFO, "AdsLogger", "LOGS", "LOGS_details")
@@ -25,7 +25,7 @@ destination = ads.dbPgsql({'database':pg_dwh_db
                     , 'port':pg_dwh_port
                     , 'host':pg_dwh_host}, logger)
 destination.connect()
-destination.exec('''
+destination.sqlExec('''
 CREATE TABLE IF NOT EXISTS demo_pipeline (
     id SERIAL PRIMARY KEY,
     tenantname VARCHAR(255),
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS demo_pipeline (
 
 query = '''
 SELECT tenantname, taille, unite, fichier
-FROM onyx_qs."diskcheck" LIMIT 10
+FROM onyx_qs."diskcheck" LIMIT 5
 '''
 
 logger.enable_logging()
@@ -57,15 +57,23 @@ logger.info("Et si la source est un tableau ?")
 source = [
     ('ADS', 120.5, 'Mo', 'test1'),
     ('ADS', 130.7, 'Mo', 'test2'),
-    ('ADS', 140.9, 'Mo', 'test3'),
+    ('ADS', "OUI", 'Mo', 'test3'),
     ('ADS', 100.0, 'Mo', 'test4')
 ]
 
 # Attention si on passe une liste de lignes à insérer à un pipelineTableau simple, elles seront insérées une par
-# une, loguée une par une et timée une par une
+# une, loguée une par une et timée une par une, mais on garde les rejets
 pipeline = ads.pipelineTableau({'tableau': source, 'db_destination': destination, 'table': 'demo_pipeline',
                  'cols': ['tenantname', 'taille', 'unite', 'fichier']}, logger)
-pipeline.run()
+rejects = pipeline.run()
+print(rejects)
+
+source = [
+    ('ADS', 120.5, 'Mo', 'test1'),
+    ('ADS', 130.7, 'Mo', 'test2'),
+    ('ADS', 1.0, 'Mo', 'test3'),
+    ('ADS', 100.0, 'Mo', 'test4')
+]
 
 # Si vous voulez insérer plusieurs lignes, utilisez plutôt
 pipelineBulk = ads.pipelineTableauBulk({'tableau': source, 'db_destination': destination, 'table': 'demo_pipeline',
@@ -73,5 +81,5 @@ pipelineBulk = ads.pipelineTableauBulk({'tableau': source, 'db_destination': des
 pipelineBulk.run()
 
 # Supprimons la table
-destination.exec(''' DROP TABLE demo_pipeline ''')
+destination.sqlExec(''' DROP TABLE demo_pipeline ''')
 logger.info("Fin de la démonstration")

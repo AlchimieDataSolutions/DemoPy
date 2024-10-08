@@ -4,7 +4,7 @@ from env import *
 import logging
 import psycopg2
 
-# On établit une connexion pour le logger pour qu'il puisse écrire en base
+# Établit une connexion pour que le logger puisse écrire en base
 logger_connection = psycopg2.connect(database=pg_dwh_db, user=pg_dwh_user, password=pg_dwh_pwd, port=pg_dwh_port,
                                      host=pg_dwh_host)
 logger = ads.Logger(logger_connection, logging.INFO, "AdsLogger", "LOGS", "LOGS_details")
@@ -19,7 +19,7 @@ source = ads.dbPgsql({'database': pg_dwh_db, 'user': pg_dwh_user, 'password': pg
 source.connect()
 
 # On crée une table
-source.exec('''
+source.sqlExec('''
 CREATE TABLE IF NOT EXISTS demo_insert (
     id SERIAL PRIMARY KEY,
     tenantname VARCHAR(255),
@@ -44,5 +44,5 @@ data = source.sqlQuery(''' SELECT * FROM demo_insert ''')
 print(list(data))
 
 # Suppression de la table
-source.exec(''' DROP TABLE demo_insert ''')
+source.sqlExec(''' DROP TABLE demo_insert ''')
 logger.info("Fin de la démonstration.")

@@ -3,13 +3,10 @@ import adsGenericFunctions as ads
 import time
 from env import *
 import logging
-import psycopg2
+import os
 import threading
 
-# On établit une connexion pour le logger pour qu'il puisse écrire en base
-logger_connection = psycopg2.connect(database=pg_dwh_db, user=pg_dwh_user, password=pg_dwh_pwd, port=pg_dwh_port,
-                                     host=pg_dwh_host)
-logger = ads.Logger(logger_connection, logging.INFO, "AdsLogger", "LOGS", "LOGS_details")
+logger = ads.Logger(None, logging.INFO, "AdsLogger")
 logger.info("Début de la démonstration...")
 
 # On active le timer, les requêtes seront chronométrées
@@ -37,4 +34,3 @@ else:
 if os.path.exists(file_path):
     os.remove(file_path)
 logger.info("Fin de la démonstration")
-
