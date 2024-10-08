@@ -36,5 +36,6 @@ data2 = source.sqlQuery('''SELECT tenantname, fichier FROM onyx_qs."diskcheck" L
 print(f"Seconde requête: {list(data2)}")
 # Ici pas d'insertions en base de logs non plus, et pas de temps d'exécutions affiché
 
+
 logger.enable_logging()
 logger.info("Fin de la démonstration !")

@@ -9,7 +9,7 @@ logger_connection = psycopg2.connect(database=pg_dwh_db, user=pg_dwh_user, passw
                                      host=pg_dwh_host)
 logger = ads.Logger(logger_connection, logging.INFO, "AdsLogger", "LOGS", "LOGS_details")
 logger.info("Début de la démonstration...")
-logger.disable_logging()
+
 
 # On active le timer, les requêtes seront chronométrées
 ads.set_timer(True)
@@ -19,13 +19,13 @@ data=monAPI.getTree()
 
 
 # Extraire la liste des clés
-noms_cles = list(data[0].keys())  # on prend les clés du premier dictionnaire
+noms_cles = list(data[0].keys())
 
 # Extraire la liste des valeurs sous forme de tuples
 valeurs_tuples = [tuple(d.values()) for d in data]
 
-print("Noms des clés :", noms_cles)
-print("Valeurs sous forme de tuples :", valeurs_tuples)
+logger.info("Noms des clés : "+ str(noms_cles))
+logger.info("Valeurs sous forme de tuples : "+ str(valeurs_tuples))
 
 destination = ads.dbPgsql({'database':pg_dwh_db
                     , 'user':pg_dwh_user
