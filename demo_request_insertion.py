@@ -2,15 +2,15 @@ import adsGenericFunctions as ads
 
 from env import *
 import logging
-import psycopg2
 
-# Établit une connexion pour que le logger puisse écrire en base
-logger_connection = psycopg2.connect(database=pg_dwh_db, user=pg_dwh_user, password=pg_dwh_pwd, port=pg_dwh_port,
-                                     host=pg_dwh_host)
+logger_connection = ads.dbPgsql({'database': pg_dwh_db,
+                                 'user': pg_dwh_user,
+                                 'password': pg_dwh_pwd,
+                                 'port': pg_dwh_port,
+                                 'host': pg_dwh_host}, None)
+logger_connection.connect()
 logger = ads.Logger(logger_connection, logging.INFO, "AdsLogger", "LOGS", "LOGS_details")
-logger.info("Début de la démonstration...")
-
-# On active le timer, les requêtes seront chronométrées
+logger.info("Début de la démonstration.")
 ads.set_timer(True)
 
 # On définit une source de connexion à laquelle on affecte notre logger
@@ -18,7 +18,8 @@ source = ads.dbPgsql({'database': pg_dwh_db, 'user': pg_dwh_user, 'password': pg
                       'host': pg_dwh_host}, logger)
 source.connect()
 
-# On crée une table
+# Créons la table qui va recevoir nos données
+source.sqlExec(''' DROP TABLE IF EXISTS demo_insert ''')
 source.sqlExec('''
 CREATE TABLE IF NOT EXISTS demo_insert (
     id SERIAL PRIMARY KEY,
@@ -26,10 +27,10 @@ CREATE TABLE IF NOT EXISTS demo_insert (
     fichier VARCHAR(255)
 );
 ''')
-logger.info("Table créee avec succès.")
 
 # Insertion d'une ligne
-source.insert('demo_insert', ['tenantname', 'fichier'], ['tenant_example', 'file_example'])
+resultat = source.insert('demo_insert', ['tenantname', 'fichier'], ['tenant_example', 'file_example'])
+print(f"Resultat: {resultat}")
 
 # Insertion de plusieurs lignes
 rows_to_insert = [
@@ -37,12 +38,17 @@ rows_to_insert = [
     ('tenant2', 'file2.txt'),
     ('tenant3', 'file3.txt')
 ]
-source.insertBulk('demo_insert', ['tenantname', 'fichier'], rows_to_insert)
+resultat = source.insertBulk('demo_insert', ['tenantname', 'fichier'], rows_to_insert)
+print(f"Resultat: {resultat}")
 
 # Lisons cette même table
 data = source.sqlQuery(''' SELECT * FROM demo_insert ''')
 print(list(data))
 
-# Suppression de la table
-source.sqlExec(''' DROP TABLE demo_insert ''')
+# Si une insertion plante, il y aura une erreur dans les logs en console, en base et en fichier
+# Mais aucune exception ne sera levée, c'est pourquoi il faut vérifier le retour qui en cas d'erreur est
+# le mot clé 'ERROR', l'erreur en question et la requête qui généré une erreur
+resultat = source.insert('demo_insert', ['tenantname', 'erreur'], ['tenant_example', 'file_example'])
+print(f"Resultat: {resultat}")
+
 logger.info("Fin de la démonstration.")

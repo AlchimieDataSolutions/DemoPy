@@ -39,7 +39,10 @@ shutil.copy("file.txt", "copy.txt")
 shutil.copy2("file.txt", "copy2.txt")
 
 # Vérifier si un fichier est présent ou non
-print(f"""Le fichier est-il présent : {os.path.isfile("copy.txt")}""")
+if os.path.isfile("copy.txt"):
+    print("Le fichier est bien présent.")
+else:
+    print("Le fichier n'est pas présent.")
 
 # Supprime un fichier
 os.remove("copy.txt")

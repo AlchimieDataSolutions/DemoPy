@@ -2,18 +2,19 @@ import adsGenericFunctions as ads
 
 from env import *
 import logging
-import psycopg2
 
-# Établit une connexion pour que le logger puisse écrire en base
-logger_connection = psycopg2.connect(database=pg_dwh_db, user=pg_dwh_user, password=pg_dwh_pwd, port=pg_dwh_port,
-                                     host=pg_dwh_host)
+logger_connection = ads.dbPgsql({'database': pg_dwh_db,
+                                 'user': pg_dwh_user,
+                                 'password': pg_dwh_pwd,
+                                 'port': pg_dwh_port,
+                                 'host': pg_dwh_host}, None)
+logger_connection.connect()
 logger = ads.Logger(logger_connection, logging.INFO, "AdsLogger", "LOGS", "LOGS_details")
-logger.info("Début de la démonstration...")
-logger.disable_logging()
-
-# On active le timer, les requêtes seront chronométrées
+logger.info("Début de la démonstration.")
+logger.disable()
 ads.set_timer(True)
 
+# Déclarons une source base de données et une destination base de données
 source = ads.dbPgsql({'database':pg_dwh_db
                     , 'user':pg_dwh_user
                     , 'password':pg_dwh_pwd
@@ -24,7 +25,10 @@ destination = ads.dbPgsql({'database':pg_dwh_db
                     , 'password':pg_dwh_pwd
                     , 'port':pg_dwh_port
                     , 'host':pg_dwh_host}, logger)
+
+# Créons la table de réception de nos données
 destination.connect()
+destination.sqlExec(''' DROP TABLE IF EXISTS demo_pipeline ''')
 destination.sqlExec('''
 CREATE TABLE IF NOT EXISTS demo_pipeline (
     id SERIAL PRIMARY KEY,
@@ -32,54 +36,41 @@ CREATE TABLE IF NOT EXISTS demo_pipeline (
     taille FLOAT(8),
     unite VARCHAR(10),
     fichier VARCHAR(255)
-);
-''')
+);''')
 
+# Voici la requête qui sera exécutée sur la source
 query = '''
 SELECT tenantname, taille, unite, fichier
 FROM onyx_qs."diskcheck" LIMIT 5
 '''
+logger.enable()
 
-logger.enable_logging()
+# Premier pipeline
+pipe = ads.pipeline({
+    'db_source': source, # La source du pipeline
+    'query_source': query, # La requête qui sera exécutée sur cette source
+    'db_destination': destination, # La destination du pipeline
+    'table': 'demo_pipeline', # La tbale de destination
+    'cols': ['tenantname', 'taille', 'unite', 'fichier'] # Les colonnes où nous allons insérer
+}, logger)
 
-# Attention si on passe une liste de lignes à insérer à un pipeline simple, elles seront insérées une par une
-# Loguée une par une et timée une par une
-pipeline = ads.pipeline({'db_source': source, 'query_source': query, 'db_destination': destination,
-                         'table': 'demo_pipeline', 'cols': ['tenantname', 'taille', 'unite', 'fichier']}, logger)
-pipeline.run()
+# Le run renvoie les rejets de l'opération, ce sera donc une liste vide si rien n'est rejeté
+rejects = pipe.run()
+print(f"Rejet(s): {rejects}")
 
-# Si vous voulez insérer plusieurs lignes, utilisez plutôt
-pipelineBulk = ads.pipelineBulk({'db_source': source, 'query_source': query, 'db_destination': destination,
-                         'table': 'demo_pipeline', 'cols': ['tenantname', 'taille', 'unite', 'fichier']}, logger)
-pipelineBulk.run()
+# Par défaut, le batch_size est de 1, ce qui insère les lignes une par une, un batch_size plus grand implique un run
+# plus rapide pour le même nombre de lignes
+# Second pipeline
+pipe = ads.pipeline({
+    'db_source': source, # La source du pipeline
+    'query_source': query, # La requête qui sera exécutée sur cette source
+    'db_destination': destination, # La destination du pipeline
+    'table': 'demo_pipeline', # La tbale de destination
+    'cols': ['tenantname', 'taille', 'unite', 'fichier'], # Les colonnes où nous allons insérer
+    'batch_size': 50
+}, logger)
 
-logger.info("Et si la source est un tableau ?")
-source = [
-    ('ADS', 120.5, 'Mo', 'test1'),
-    ('ADS', 130.7, 'Mo', 'test2'),
-    ('ADS', "OUI", 'Mo', 'test3'),
-    ('ADS', 100.0, 'Mo', 'test4')
-]
+rejects = pipe.run()
+print(f"Rejet(s): {rejects}")
 
-# Attention si on passe une liste de lignes à insérer à un pipelineTableau simple, elles seront insérées une par
-# une, loguée une par une et timée une par une, mais on garde les rejets
-pipeline = ads.pipelineTableau({'tableau': source, 'db_destination': destination, 'table': 'demo_pipeline',
-                 'cols': ['tenantname', 'taille', 'unite', 'fichier']}, logger)
-rejects = pipeline.run()
-print(rejects)
-
-source = [
-    ('ADS', 120.5, 'Mo', 'test1'),
-    ('ADS', 130.7, 'Mo', 'test2'),
-    ('ADS', 1.0, 'Mo', 'test3'),
-    ('ADS', 100.0, 'Mo', 'test4')
-]
-
-# Si vous voulez insérer plusieurs lignes, utilisez plutôt
-pipelineBulk = ads.pipelineTableauBulk({'tableau': source, 'db_destination': destination, 'table': 'demo_pipeline',
-                 'cols': ['tenantname', 'taille', 'unite', 'fichier']}, logger)
-pipelineBulk.run()
-
-# Supprimons la table
-destination.sqlExec(''' DROP TABLE demo_pipeline ''')
 logger.info("Fin de la démonstration")
