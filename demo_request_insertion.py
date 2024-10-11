@@ -47,7 +47,7 @@ print(list(data))
 
 # Si une insertion plante, il y aura une erreur dans les logs en console, en base et en fichier
 # Mais aucune exception ne sera levée, c'est pourquoi il faut vérifier le retour qui en cas d'erreur est
-# le mot clé 'ERROR', l'erreur en question et la requête qui généré une erreur
+# le mot clé 'ERROR', l'erreur en question et la requête qui a généré une erreur
 resultat = source.insert('demo_insert', ['tenantname', 'erreur'], ['tenant_example', 'file_example'])
 print(f"Resultat: {resultat}")
 

@@ -2,6 +2,7 @@ import adsGenericFunctions as ads
 
 from env import *
 import logging
+import time
 
 # Établit une connexion pour que le logger puisse écrire en base
 logger_connection = ads.dbPgsql({'database': pg_dwh_db,
@@ -42,6 +43,15 @@ data2 = source.sqlQuery('''SELECT tenantname, fichier FROM onyx_qs."diskcheck" L
 print(f"Seconde requête: {list(data2)}")
 # Ici pas d'insertions en base de logs non plus, et pas de temps d'exécutions affiché
 
+# On peut aussi affecter le décorateur timer à n'importe quelle méthode
+@ads.timer
+def sample_function(duration, logger=None):
+    """ Une fonction d'exemple qui simule une tâche en attendant un certain temps. """
+    time.sleep(duration)
+    return "Done"
 
+# Par contre, il faut absolument un argument 'logger' dans la fonction en question
 logger.enable()
+sample_function(0.1, logger=logger)
+
 logger.info("Fin de la démonstration !")
