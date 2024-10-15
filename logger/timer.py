@@ -1,4 +1,4 @@
-import adsGenericFunctions as ads
+import adsToolBox as ads
 
 from env import *
 import logging
@@ -55,3 +55,5 @@ logger.enable()
 sample_function(0.1, logger=logger)
 
 logger.info("Fin de la démonstration !")
+
+# Séparer logger et timer, dossier dataframe connexion file api log pipeline(à utiliser dans les autres)

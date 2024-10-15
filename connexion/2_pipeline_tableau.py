@@ -1,4 +1,4 @@
-import adsGenericFunctions as ads
+import adsToolBox as ads
 
 from env import *
 import logging
@@ -23,6 +23,7 @@ source = [
     ('ADS', 100.0, 'Mo', 'test4')
 ]
 destination = {
+    'name': 'test',
     'db': ads.dbPgsql({'database':pg_dwh_db, 'user':pg_dwh_user, 'password':pg_dwh_pwd, 'port':pg_dwh_port
                     , 'host':pg_dwh_host}, logger),
     'table': 'demo_pipeline',
@@ -50,17 +51,6 @@ pipe = ads.pipeline({
 rejects = pipe.run()
 print(f"{len(rejects)} rejet(s) : {rejects}")
 
-# Comme pour l'autre démo, un batch_size plus grand implique un traitement plus rapide
-# Second pipeline
-pipe = ads.pipeline({
-    'tableau': source, # Le tableau qui sert de source
-    'db_destinations': destination, # La destination du pipeline
-    'batch_size': 50
-}, logger)
-
-rejects = pipe.run()
-print(f"{len(rejects)} rejet(s) : {rejects}")
-
 # Voyons les rejets justement, redefinissons une source qui générera une erreur
 source = [
     ('ADS', 120.5, 'Mo', 'test1'),
@@ -74,6 +64,7 @@ source = [
 pipe = ads.pipeline({
     'tableau': source, # Le tableau qui sert de source
     'db_destinations': destination, # La destination du pipeline
+    'batch_size': 1
 }, logger)
 
 rejects = pipe.run()
