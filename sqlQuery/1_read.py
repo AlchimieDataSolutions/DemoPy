@@ -11,4 +11,5 @@ source.connect()
 data = source.sqlQuery('''SELECT tenantname, taille, unite, fichier
                    FROM onyx_qs."diskcheck" LIMIT 5''')
 
-print(list(data))
+for i in data:
+    print(i)

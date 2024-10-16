@@ -15,11 +15,11 @@ destination = {
     'cols': ['tenantname', 'taille', 'unite', 'fichier']
 }
 
-# Premier pipeline
+# Déclaration du pipeline
 pipe = ads.pipeline({
     'tableau': source, # Le tableau qui sert de source
-    'db_destinations': destination,
-    'batch_size': 1 # Optionnel, 1000 par défaut
+    'db_destination': destination,
+    'batch_size': 1 # Optionnel, 10 000 par défaut
 }, logger)
 
 rejects = pipe.run()

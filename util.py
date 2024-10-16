@@ -5,7 +5,6 @@ import os
 import threading
 
 logger = ads.Logger(None, logging.DEBUG, "EnvLogger")
-logger.info("Démo")
 
 #Chargement des variables d'environnement
 env = ads.env(logger) #,'C:/Users/ADS12/PycharmProjects/DemoPy/.env'
@@ -17,8 +16,10 @@ logger_connection = ads.dbPgsql({'database': env.PG_DWH_DB
                           , 'host': env.PG_DWH_HOST},
                       None)
 logger_connection.connect()
-logger = ads.Logger(logger_connection, logging.INFO, "AdsLogger", "LOGS", "LOGS_details")
-logger.info("Début de la démonstration...")
+logger = ads.Logger(logger_connection, logging.INFO, "AdsLogger", "LOGS",
+                    "LOGS_details")
+
+
 logger.disable()
 ads.set_timer(True)
 
@@ -31,7 +32,6 @@ destination = {
 }
 
 destination['db'].connect()
-
 destination['db'].sqlExec(''' DROP TABLE IF EXISTS demo_pipeline; ''')
 destination['db'].sqlExec('''
 CREATE TABLE IF NOT EXISTS demo_pipeline (
@@ -42,5 +42,4 @@ CREATE TABLE IF NOT EXISTS demo_pipeline (
     fichier VARCHAR(255)
 );
 ''')
-
 logger.enable()

@@ -9,7 +9,6 @@ source = ads.dbPgsql({'database':env.PG_DWH_DB
 source.connect()
 
 #Il existe également la fonction insertBulk
-resultat = source.insert('''INSERT INTO onyx_qs."diskcheck" (tenantname, taille, unite, fichier) 
-                 VALUES ('new_tenant', 0,'To', 'test3')''')
+resultat = source.insert('demo_insert', ['tenantname', 'fichier'], ['tenant_example', 'file_example'])
 
 print(f"Resultat: {resultat}")

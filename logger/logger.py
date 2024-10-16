@@ -1,18 +1,6 @@
 from util import *
 
-logger = ads.Logger(None, logging.DEBUG, "EnvLogger")
-logger.info("Démo")
-
-# Établit une pipeline pour que le logger puisse écrire en base
-logger_connection = ads.dbPgsql({'database': env.PG_DWH_DB,
-                                 'user': env.PG_DWH_USER,
-                                 'password': env.PG_DWH_PWD,
-                                 'port': env.PG_DWH_PORT,
-                                 'host': env.PG_DWH_HOST}, None)
-# Ne pas oublier de lancer la connection
-logger_connection.connect()
-
-logger = ads.Logger(logger_connection, logging.INFO, "AdsLogger", "LOGS", "LOGS_details")
+logger = ads.Logger(None, logging.DEBUG, "Logger")
 logger.info("Début de la démonstration.")
 
 logger.error("Message d'erreur")
@@ -21,4 +9,10 @@ logger.debug("Message de debug")
 
 logger.warning("Message de warning")
 
+logger.disable() # Cette commande désactive l'affichage des logs et l'insertion des logs en base
+# Tous les logs ne sont pas insérés en base, seuls les opérations liés aux bdd le sont
+
+logger.info("Toi tu ne t'afficheras pas")
+
+logger.enable() # Par défaut, se réactive avec le niveau INFO
 logger.info("Fin de la démonstration !")

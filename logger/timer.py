@@ -1,11 +1,10 @@
 from util import *
 
-
-# Active le timer, les requêtes seront chronométrées, si le logger n'est pas activé, les temps d'exécutions ne seront pas affichés
+# Active le timer, les requêtes seront chronométrées, si le logger n'est pas activé, les temps d'exécutions ne seront
+# pas affichés
 ads.set_timer(True)
 
-#toutes les fonctions d'adsToolBox sont chronométrés par défaut
-
+# Toutes les fonctions d'adsToolBox sont chronométrés par défaut
 
 # On peut aussi affecter le décorateur timer à n'importe quelle méthode
 @ads.timer

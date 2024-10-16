@@ -8,7 +8,5 @@ source = ads.dbPgsql({'database':env.PG_DWH_DB
 
 source.connect()
 
-
-#Il existe également la fonction insertBulk
-source.sqlScalaire('''SELECT NOW()''')
-
+result = source.sqlScalaire('''SELECT NOW()''')
+print(result)

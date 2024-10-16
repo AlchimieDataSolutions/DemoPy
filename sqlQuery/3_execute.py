@@ -8,6 +8,12 @@ source = ads.dbPgsql({'database':env.PG_DWH_DB
 
 source.connect()
 
-#Il existe également la fonction insertBulk
-source.sqlExec('''DROP TABLE IF EXISTS onyx_qs."diskcheck"''')
+source.sqlExec(''' DROP TABLE IF EXISTS demo_insert ''')
+
+source.sqlExec('''
+CREATE TABLE IF NOT EXISTS demo_insert (
+    id SERIAL PRIMARY KEY,
+    tenantname VARCHAR(255),
+    fichier VARCHAR(255)
+);''')
 
