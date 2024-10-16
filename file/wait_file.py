@@ -1,15 +1,5 @@
-import adsToolBox as ads
+from util import *
 
-import time
-import logging
-import os
-import threading
-
-logger = ads.Logger(None, logging.INFO, "AdsLogger")
-logger.info("Début de la démonstration...")
-
-# On active le timer, les requêtes seront chronométrées
-ads.set_timer(True)
 
 file_path = "test.txt"
 if os.path.exists(file_path):

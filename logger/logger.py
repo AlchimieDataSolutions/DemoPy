@@ -1,14 +1,14 @@
-import adsToolBox as ads
+from util import *
 
-from env import *
-import logging
+logger = ads.Logger(None, logging.DEBUG, "EnvLogger")
+logger.info("Démo")
 
-# Établit une connexion pour que le logger puisse écrire en base
-logger_connection = ads.dbPgsql({'database': pg_dwh_db,
-                                 'user': pg_dwh_user,
-                                 'password': pg_dwh_pwd,
-                                 'port': pg_dwh_port,
-                                 'host': pg_dwh_host}, None)
+# Établit une pipeline pour que le logger puisse écrire en base
+logger_connection = ads.dbPgsql({'database': env.PG_DWH_DB,
+                                 'user': env.PG_DWH_USER,
+                                 'password': env.PG_DWH_PWD,
+                                 'port': env.PG_DWH_PORT,
+                                 'host': env.PG_DWH_HOST}, None)
 # Ne pas oublier de lancer la connection
 logger_connection.connect()
 
