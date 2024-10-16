@@ -33,53 +33,26 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Pipeline de Données
-
-Le fichier `demo_pipeline_3_destinations.py` démontre comment créer et gérer des pipelines de données avec des destinations multiples.
-
-```python
-from demo_pipeline_3_destinations import main
-
-main()
-```
-
 ### Configuration d'Environnement
 
-Utiliser le fichier `env.py` pour gérer les configurations d'environnement.
+Utiliser cette méthode pour gérer les configurations d'environnement.
 
 ```python
-import env
+import adsToolBox as ads
+import logging
 
-config = env.get_config()
-print(config)
+logger = ads.Logger(None, logging.DEBUG, "EnvLogger")
+
+env = ads.env(logger, 'lien absolu vers le .env')
 ```
 
-### Tests Unitaires
+### Démonstrations
 
-Le fichier `test.py` contient des exemples de tests unitaires pour votre projet. Utilisez `pytest` pour exécuter ces tests.
+Dans les dossiers connexion, dataframe, file, logger, pipeline et sqlQuery se trouvent des scripts qui illustrent des
+traitement génériques, utilisant pour la plupart la librairie adsToolBox.
 
-### Logger et Timer
-
-Le fichier `demo_logger_timer.py` démontre l'utilisation des logs et des timers pour mesurer l'exécution du code.
-
-```python
-from demo_logger_timer import logger, timer
-
-@timer
-def sample_function():
-    logger.info("Function executed")
-    # Votre code ici
-
-sample_function()
-```
-
-## Tests
-
-Pour exécuter les tests unitaires :
-
-```bash
-pytest
-```
+Par la suite, des lignes de code se répétant et ne participant pas à la démonstration courante sont importées depuis 
+CommonLib.py.
 
 ## Contribution
 
@@ -99,6 +72,5 @@ Ce projet est sous licence MIT - voir le fichier LICENSE.md pour plus de détail
 
 Pour toute question, veuillez contacter :
 
-Nom - [@VotrePseudo](https://twitter.com/votre_pseudo) - email@example.com
-
-Lien du projet: https://github.com/votre_nom_d_utilisateur/DemoPy
+Antoine Ducoulombier - antoine.ducoulombier@alchimiedatasolutions.com
+Matthieu Vannin - matthieu.vannin@alchimiedatasolutions.com

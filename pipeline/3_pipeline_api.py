@@ -1,5 +1,5 @@
 from get_api_data import *
-from util import *
+from CommonLib import *
 
 
 monAPI=NxOnyxApi(domain=env.ORISHA_PROD_TENANTDOMAIN,username=env.ORISHA_PROD_TENANTUSERNAME,password=env.ORISHA_PROD_TENANTPASSWORD,tenantId=env.ORISHA_PROD_TENANTID)

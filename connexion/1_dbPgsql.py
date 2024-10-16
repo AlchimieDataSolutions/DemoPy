@@ -1,4 +1,4 @@
-from util import *
+from CommonLib import *
 
 # Instanciation d'une base PostgreSQL
 source = ads.dbPgsql({'database':env.PG_DWH_DB

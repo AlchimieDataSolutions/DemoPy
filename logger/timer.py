@@ -1,4 +1,4 @@
-from util import *
+from CommonLib import *
 
 # Active le timer, les requêtes seront chronométrées, si le logger n'est pas activé, les temps d'exécutions ne seront
 # pas affichés

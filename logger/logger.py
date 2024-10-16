@@ -1,4 +1,4 @@
-from util import *
+from CommonLib import *
 
 logger = ads.Logger(None, logging.DEBUG, "Logger")
 logger.info("Début de la démonstration.")

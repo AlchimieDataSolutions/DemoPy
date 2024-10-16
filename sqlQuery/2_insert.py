@@ -1,4 +1,4 @@
-from util import *
+from CommonLib import *
 
 source = ads.dbPgsql({'database':env.PG_DWH_DB
                     , 'user':env.PG_DWH_USER
