@@ -72,5 +72,5 @@ Ce projet est sous licence MIT - voir le fichier LICENSE.md pour plus de détail
 
 Pour toute question, veuillez contacter :
 
-Antoine Ducoulombier - antoine.ducoulombier@alchimiedatasolutions.com
+Antoine Ducoulombier - antoine.ducoulombier@alchimiedatasolutions.com  
 Matthieu Vannin - matthieu.vannin@alchimiedatasolutions.com
