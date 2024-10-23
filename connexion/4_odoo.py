@@ -13,7 +13,7 @@ fields = odoo.desc("account.account")
 logger.info(f"Descriptions: {fields}")
 
 #Récupérer les valeurs d'une tables en précisant les colonnes et un filtre
-values = odoo.get("hr.employee", ['id', 'name', 'resource_id', 'user_id', 'work_email'], [])
+values = odoo.get("hr.employee", ['id', 'name', 'work_email'], [])
 logger.info(f"Valeurs: {values}")
 
 #Insérer des lignes dans une table

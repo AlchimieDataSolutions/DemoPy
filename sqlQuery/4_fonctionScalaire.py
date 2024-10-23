@@ -1,12 +1,6 @@
 from CommonLib import *
 
-source = ads.dbPgsql({'database':env.PG_DWH_DB
-                    , 'user':env.PG_DWH_USER
-                    , 'password':env.PG_DWH_PWD
-                    , 'port':env.PG_DWH_PORT
-                    , 'host':env.PG_DWH_HOST}, logger, 1)
+source_pg.connect()
 
-source.connect()
-
-result = source.sqlScalaire('''SELECT NOW()''')
+result = source_pg.sqlScalaire('''SELECT NOW()''')
 print(result)

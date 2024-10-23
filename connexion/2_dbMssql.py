@@ -1,11 +1,11 @@
 from CommonLib import *
 
-# Insranciation d'une base PostgreSQL
-source = ads.dbMssql({'database':env.PG_DWH_DB
-                    , 'user':env.PG_DWH_USER
-                    , 'password':env.PG_DWH_PWD
-                    , 'port':env.PG_DWH_PORT
-                    , 'host':env.PG_DWH_HOST}, logger, 1)
+# Instanciation d'une base PostgreSQL
+source = ads.dbMssql({'database':env.MSSQL_DWH_DB
+                    , 'user':env.MSSQL_DWH_USER
+                    , 'password':env.MSSQL_DWH_PWD
+                    , 'port':env.MSSQL_DWH_PORT_VPN
+                    , 'host':env.MSSQL_DWH_HOST_VPN}, logger, 1)
 
 #Connexion
 source.connect()
