@@ -9,8 +9,7 @@ source = [
 ]
 destination = {
     'name': 'test',
-    'db': ads.dbPgsql({'database':env.PG_DWH_DB, 'user':env.PG_DWH_USER, 'password':env.PG_DWH_PWD, 'port':env.PG_DWH_PORT
-                    , 'host':env.PG_DWH_HOST}, logger),
+    'db': source_pg,
     'table': 'demo_pipeline',
     'cols': ['tenantname', 'taille', 'unite', 'fichier']
 }

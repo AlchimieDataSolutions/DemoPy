@@ -1,5 +1,6 @@
 from CommonLib import *
 
+logger.enable()
 source_pg.connect()
 print(source_pg.insert('demo_insert', ['tenantname', 'fichier'], ['tenant_example', 'file_example']))
 
@@ -17,4 +18,4 @@ print(source_mssql.insert('insert_test', ['name', 'email'], ['nom', 'mail']))
 print(source_mssql.insertMany('insert_test', ['name', 'email'], rows_100))
 
 print(source_mssql.insertBulk('insert_test', [2, 3], rows_50k))
-# insertBulk de dbMssql prend les indices des colonnes dans lesquelles insérer pas les noms
+# insertBulk de dbMssql prend les indices des colonnes dans lesquelles insérer, pas les noms
