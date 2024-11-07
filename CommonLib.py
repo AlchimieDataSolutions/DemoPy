@@ -1,5 +1,9 @@
 import adsToolBox as ads
-import logging
+import os
+import time
+import threading
+import shutil
+import polars as pl
 
 def first(iterator, default=None):
     """
@@ -12,10 +16,11 @@ def first(iterator, default=None):
         return item
     return default
 
-logger = ads.Logger(None, logging.DEBUG, "EnvLogger")
+logger = ads.Logger(None, ads.Logger.DEBUG, "EnvLogger")
 
 #Chargement des variables d'environnement
-env = ads.env(logger) #,'C:/Users/ADS12/PycharmProjects/DemoPy/.env'
+env = ads.env(logger, 'C:/Users/mvann/Desktop/ADS/Projects/Demo/.env')
+#,'C:/Users/ADS12/PycharmProjects/DemoPy/.env'
 
 logger_connection = ads.dbPgsql({'database': env.PG_DWH_DB
                           , 'user': env.PG_DWH_USER
@@ -24,7 +29,7 @@ logger_connection = ads.dbPgsql({'database': env.PG_DWH_DB
                           , 'host': env.PG_DWH_HOST},
                       None)
 logger_connection.connect()
-logger = ads.Logger(logger_connection, logging.DEBUG, "AdsLogger", "LOGS",
+logger = ads.Logger(logger_connection, ads.Logger.DEBUG, "AdsLogger", "LOGS",
                     "LOGS_details")
 
 logger.disable()
@@ -39,8 +44,8 @@ source_pg = ads.dbPgsql({'database':env.PG_DWH_DB
 source_mssql = ads.dbMssql({'database': env.MSSQL_DWH_DB,
                       'user': env.MSSQL_DWH_USER,
                       'password': env.MSSQL_DWH_PWD,
-                      'port': env.MSSQL_DWH_PORT,
-                      'host': env.MSSQL_DWH_HOST}, logger)
+                      'port': env.MSSQL_DWH_PORT_VPN,
+                      'host': env.MSSQL_DWH_HOST_VPN}, logger)
 
 source_pg.connect()
 source_pg.sqlExec('''
@@ -74,6 +79,8 @@ SELECT id, name, email FROM insert_test;
     'name': 'test',
     'db': source_mssql,
     'table': 'dbo.insert_test',
-    'cols': [1, 2, 3]
+    'cols': None # None signifie que toute les colonnes de la table cible sont concernées
 }, # La destination du pipeline
 }, logger)
+
+logger.enable()

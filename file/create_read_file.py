@@ -1,6 +1,4 @@
-import shutil
-import polars as pl
-import os
+from CommonLib import *
 
 data = [
     ("A", 1, 10.5, 'He said "Hello"'),

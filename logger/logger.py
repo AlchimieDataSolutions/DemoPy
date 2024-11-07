@@ -1,6 +1,6 @@
 from CommonLib import *
 
-logger = ads.Logger(None, logging.DEBUG, "Logger")
+logger = ads.Logger(None, ads.Logger.DEBUG, "Logger")
 logger.info("Début de la démonstration.")
 
 logger.error("Message d'erreur")

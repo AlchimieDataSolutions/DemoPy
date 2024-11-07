@@ -9,8 +9,7 @@ source = ads.dbPgsql({'database':env.PG_DWH_DB
 source.connect()
 data = source.sqlQuery('''SELECT tenantname, taille, unite, fichier
                    FROM onyx_qs."diskcheck" LIMIT 5''')
-for i in data:
-    print(i)
+print(list(data)[0])
 
 logger.warning("Et une connexion SQL Server?")
 source = ads.dbMssql({'database': env.MSSQL_DWH_DB,
@@ -19,6 +18,6 @@ source = ads.dbMssql({'database': env.MSSQL_DWH_DB,
                       'port': env.MSSQL_DWH_PORT_VPN,
                       'host': env.MSSQL_DWH_HOST_VPN}, logger, 5)
 source.connect()
-data = source.sqlQuery('''SELECT TOP 5 * FROM "dbo"."insert_test";''')
-for i in data:
-    print(i)
+print(source_mssql.insert('insert_test', ['name', 'email'], ['nom', 'mail']))
+data = source.sqlQuery('''SELECT TOP 5 * FROM dbo.insert_test;''')
+print(list(data)[0])
