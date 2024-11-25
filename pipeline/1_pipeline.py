@@ -27,9 +27,7 @@ pipe = ads.pipeline({
 rows = [(f'Name {i}', f'email{i}@example.com') for i in range(5)]
 print(source_pg.insertBulk('insert_test', ['name', 'email'], rows))
 
-rejects = pipe.run() # pipeline.run() renvoie les rejets du pipeline, ce sera une liste vide s'il n'y en a pas
-print(f"Rejets : {rejects}")
+# pipeline.run() renvoie les résultats du pipeline
+print(f"Résultats : {pipe.run()}")
 
-# Les deux batch_size sont à 1, chaque ligne sera inséré une par une, ce sera lent, mais les rejets seront des batchs
-# de 1 ligne.
 logger.info("Fin de la démonstration")

@@ -18,10 +18,8 @@ destination = {
 pipe = ads.pipeline({
     'tableau': source, # Le tableau qui sert de source
     'db_destination': destination,
-    'batch_size': 1 # Optionnel, 10 000 par défaut
+    'batch_size': 1, # Optionnel, 10 000 par défaut
 }, logger)
 
-rejects = pipe.run()
-print(f"{len(rejects)} rejet(s) : {rejects}")
-
+print(f"Résultats : {pipe.run()}")
 logger.info("Fin de la démonstration")
