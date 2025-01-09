@@ -4,7 +4,7 @@ from CommonLib import *
 # pas affichés
 ads.set_timer(True)
 
-# Toutes les fonctions d'adsToolBox sont chronométrés par défaut
+# La plupart des fonctions d'adsToolBox sont chronométrés par défaut
 
 # On peut aussi affecter le décorateur timer à n'importe quelle méthode
 @ads.timer

@@ -28,15 +28,15 @@ source_pg = ads.dbPgsql({'database':env.PG_DWH_DB
                     , 'port':env.PG_DWH_PORT
                     , 'host':env.PG_DWH_HOST}, logger)
 source_pg.connect()
+
 source_mssql = ads.dbMssql({'database': env.MSSQL_DWH_DB,
                       'user': env.MSSQL_DWH_USER,
                       'password': env.MSSQL_DWH_PWD,
-                      'port': env.MSSQL_DWH_PORT,
-                      'host': env.MSSQL_DWH_HOST}, logger)
+                      'port': env.MSSQL_DWH_PORT_VPN,
+                      'host': env.MSSQL_DWH_HOST_VPN}, logger)
 source_mssql.connect()
 
-logger.set_connection(source_pg, ads.Logger.DEBUG)
-# Attention ça réactive les logs
+logger.set_connection(source_pg, ads.Logger.DEBUG) # Attention ça réactive les logs donc
 logger.disable()
 
 source_pg.sqlExec('''
@@ -44,7 +44,8 @@ DROP TABLE IF EXISTS insert_test;
 CREATE TABLE IF NOT EXISTS insert_test (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255),
-    email VARCHAR(255)
+    email VARCHAR(255),
+    age INT
 );
 ''')
 
@@ -54,7 +55,8 @@ IF OBJECT_ID('dbo.insert_test', 'U') IS NOT NULL
 CREATE TABLE dbo.insert_test (
     id INT IDENTITY(1,1) PRIMARY KEY,
     name VARCHAR(255),
-    email VARCHAR(255)
+    email VARCHAR(255),
+    age INT
 );
 ''')
 
@@ -62,13 +64,14 @@ CREATE TABLE dbo.insert_test (
 pipePgToSqlServer = ads.pipeline({
     'db_source': source_pg, # La source du pipeline
     'query_source': '''
-    SELECT id, name, email FROM insert_test;
+    SELECT * FROM insert_test;
     ''', # La requête qui sera exécutée sur cette source
     'db_destination': {
     'name': 'test',
     'db': source_mssql,
-    'table': 'dbo.insert_test',
-    'cols': None # None signifie que toute les colonnes de la table cible sont concernées
+    'schema': 'dbo',
+    'table': 'insert_test',
+    'cols': ['id', 'name', 'email', 'age']
 }, # La destination du pipeline
 }, logger)
 

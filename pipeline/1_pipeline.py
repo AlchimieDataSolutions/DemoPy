@@ -25,7 +25,7 @@ pipe = ads.pipeline({
 
 # On remplit la table source
 rows = [(f'Name {i}', f'email{i}@example.com') for i in range(5)]
-print(source_pg.insertBulk('insert_test', ['name', 'email'], rows))
+print(source_pg.insertBulk('', 'insert_test', ['name', 'email'], rows))
 
 # pipeline.run() renvoie les résultats du pipeline
 print(f"Résultats : {pipe.run()}")

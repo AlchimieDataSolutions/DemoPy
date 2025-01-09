@@ -1,9 +1,11 @@
 from CommonLib import *
 
+# Deux niveaux de logs existent, un pour l'affichage en console/fichier et un autre pour l'insertion en base
+
 logger = ads.Logger(ads.Logger.DEBUG, "Logger","LOGS", "LOGS_details")
 logger.info("Début de la démonstration.")
 
-logger.set_connection(source_pg, ads.Logger.DEBUG) #Tous les logs au >= DEBUG seront insérés dans LOGS_details
+logger.set_connection(source_pg, ads.Logger.DEBUG) #Tous les logs >= au niveau DEBUG seront insérés dans LOGS_details
 
 # Si les tables de logs n'existent pas, il faut appeler
 logger.create_logs_tables()
@@ -18,7 +20,7 @@ logger.disable() # Cette commande désactive l'affichage des logs et l'insertion
 
 logger.info("Toi tu ne t'afficheras pas")
 
-logger.enable() # Par défaut, se réactive avec le niveau INFO
+logger.enable(ads.Logger.DEBUG, ads.Logger.INFO) # Par défaut, se réactivent avec le niveau INFO
 
 logger.info("Mais toi oui")
 

@@ -25,7 +25,6 @@ destination = {
 }
 
 
-
 pipeline = ads.pipeline({'tableau': valeurs_tuples, 'db_destination': destination, 'table': 'onyx_qs.test',
                  'cols': noms_cles}, logger)
 
