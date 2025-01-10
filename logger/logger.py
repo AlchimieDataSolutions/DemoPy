@@ -1,8 +1,9 @@
 from CommonLib import *
 
 # Deux niveaux de logs existent, un pour l'affichage en console/fichier et un autre pour l'insertion en base
-
-logger = ads.Logger(ads.Logger.DEBUG, "Logger","LOGS", "LOGS_details")
+# timestamp_display et name_display font exactement ce que vous pensez et sont par défaut à True
+logger = ads.Logger(ads.Logger.DEBUG, "Logger","LOGS", "LOGS_details",
+                    timestamp_display=True, name_display=True)
 logger.info("Début de la démonstration.")
 
 logger.set_connection(source_pg, ads.Logger.DEBUG) #Tous les logs >= au niveau DEBUG seront insérés dans LOGS_details
@@ -27,4 +28,4 @@ logger.info("Mais toi oui")
 # Avec chaque opération sur une base ads, une ligne sera insérée dans la table LOGS_details
 # Pour effectuer une insertion dans la table de logs principale, il faut appeler
 logger.log_close("DEMO", "Message type")
-# Attention log_close désactive les logs, logger.enable() si besoin
+# Attention log_close désactive les logs, logger.enable() les réactive
