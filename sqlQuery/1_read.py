@@ -18,7 +18,7 @@ source = ads.dbMssql({'database': env.MSSQL_DWH_DB,
                       'port': env.MSSQL_DWH_PORT,
                       'host': env.MSSQL_DWH_HOST}, logger, 5)
 source.connect()
-print(source_mssql.insert('insert_test', ['name', 'email'], ['nom', 'mail']))
+print(source_mssql.insert('dbo', 'insert_test', ['name', 'email'], ['nom', 'mail']))
 data = source.sqlQuery('''SELECT TOP 5 * FROM dbo.insert_test;''')
 print(list(data)[0])
 

@@ -20,7 +20,7 @@ destination = {
 pipe = ads.pipeline({
     'tableau': source, # Le tableau qui sert de source
     'db_destination': destination,
-    'mode': 'executemany',
+    'insert_method': 'executemany',
     'batch_size': 1, # Optionnel, 10 000 par défaut
 }, logger)
 

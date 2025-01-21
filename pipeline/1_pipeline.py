@@ -4,8 +4,10 @@ from CommonLib import *
 destination = {
     'name': 'test',
     'db': source_mssql,
-    'table': 'dbo.insert_test',
-    'cols': ['name', 'email']
+    'schema': 'dbo',
+    'table': 'insert_test',
+    'cols': ['name', 'email'],
+    'conflict_cols': ['name'] # Paramètre à mettre si l'on compte faire un upsert
 }
 
 # Voici la requête pour la source (lecture des données)
@@ -18,9 +20,9 @@ pipe = ads.pipeline({
     'db_source': source_pg, # La source du pipeline
     'query_source': query, # La requête qui sera exécutée sur cette source
     'db_destination': destination, # La destination du pipeline
-    'mode': 'executemany', # Applique des executemany, 'bulk' par défaut
+    'operation_type':'upsert', # Effectue un upsert, 'insert' par défaut
+    'insert_method': 'executemany', # Applique des executemany, 'bulk' par défaut
     'batch_size': 5, # Optionnel, 10 000 par défaut
-    'checkup': True, # vérifie ensuite si la destination correspond à la source après le run
 }, logger)
 
 # On remplit la table source
