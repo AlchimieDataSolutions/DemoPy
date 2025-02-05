@@ -15,9 +15,12 @@ logger.warning("Et une connexion SQL Server?")
 source = ads.dbMssql({'database': env.MSSQL_DWH_DB,
                       'user': env.MSSQL_DWH_USER,
                       'password': env.MSSQL_DWH_PWD,
-                      'port': env.MSSQL_DWH_PORT_VPN,
-                      'host': env.MSSQL_DWH_HOST_VPN}, logger, 5)
+                      'port': env.MSSQL_DWH_PORT,
+                      'host': env.MSSQL_DWH_HOST}, logger, 5)
 source.connect()
-print(source_mssql.insert('insert_test', ['name', 'email'], ['nom', 'mail']))
+print(source_mssql.insert('dbo', 'insert_test', ['name', 'email'], ['nom', 'mail']))
 data = source.sqlQuery('''SELECT TOP 5 * FROM dbo.insert_test;''')
+print(list(data)[0])
+
+data = source_mssql.sqlQuery('SELECT 1')
 print(list(data)[0])

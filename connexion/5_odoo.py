@@ -17,4 +17,4 @@ values = odoo.get("hr.employee", ['id', 'name', 'work_email'], [])
 logger.info(f"Valeurs: {values}")
 
 #Insérer des lignes dans une table
-odoo.put("MaTables",[("1","employe1","data engineer"),("2","employe2","data analyst")])
+odoo.put("MaTables",[("1","employe1","data engineer"), ("2","employe2","data analyst")])

@@ -1,6 +1,6 @@
 from CommonLib import *
 
-# Instanciation d'une base PostgreSQL
+# Instanciation d'une connexion à une base PostgreSQL
 source = ads.dbPgsql({'database':env.PG_DWH_DB
                     , 'user':env.PG_DWH_USER
                     , 'password':env.PG_DWH_PWD

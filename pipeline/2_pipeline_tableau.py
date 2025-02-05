@@ -2,26 +2,27 @@ from CommonLib import *
 
 # Déclarons une source base de données, mais cette fois ce sera un tableau
 source = [
-    ('ADS', 120.5, 'Mo', 'test1'),
-    ('ADS', 130.7, 'Mo', 'test2'),
-    ('ADS', "Cela va créer une erreur", 'Mo', 'test3'),
-    ('ADS', 100.0, 'Mo', 'test4')
+    ('Nom 1', 'Email 1', 1),
+    ('Nom 2', 'Email 2', 2),
+    ('Nom 3', 'Email 3', "ERR"),
+    ('Nom 4', 'Email 4', 4)
 ]
+
 destination = {
     'name': 'test',
-    'db': source_pg,
-    'table': 'demo_pipeline',
-    'cols': ['tenantname', 'taille', 'unite', 'fichier']
+    'db': source_mssql,
+    'schema': 'dbo',
+    'table': 'insert_test',
+    'cols': ['name', 'email', 'age']
 }
 
 # Déclaration du pipeline
 pipe = ads.pipeline({
     'tableau': source, # Le tableau qui sert de source
     'db_destination': destination,
-    'batch_size': 1 # Optionnel, 10 000 par défaut
+    'insert_method': 'executemany',
+    'batch_size': 1, # Optionnel, 10 000 par défaut
 }, logger)
 
-rejects = pipe.run()
-print(f"{len(rejects)} rejet(s) : {rejects}")
-
+print(f"Résultats : {pipe.run()}")
 logger.info("Fin de la démonstration")
