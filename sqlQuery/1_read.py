@@ -9,7 +9,9 @@ source = ads.dbPgsql({'database':env.PG_DWH_DB
 source.connect()
 data = source.sqlQuery('''SELECT tenantname, taille, unite, fichier
                    FROM onyx_qs."diskcheck" LIMIT 5''')
-print(list(data)[0])
+for d in data:
+    for a in d:
+        print(a)
 
 logger.warning("Et une connexion SQL Server?")
 source = ads.dbMssql({'database': env.MSSQL_DWH_DB,
