@@ -34,3 +34,7 @@ file_path = path + 'clean' + extension
 file_handler.write_file(file_path, special_characters_text, "wb", True)
 
 # De manière générale, si vous n'avez pas besoin de vérifier quelque chose dans le fichier, écrivez en binaire
+
+# Si on veut se connecter à un partage smb, il faut définir FileHander comme suit:
+
+file_handler = ads.FileHandler(logger, {"server": "", "username": "", "password": ""})
