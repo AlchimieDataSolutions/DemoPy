@@ -39,7 +39,7 @@ def create_file_with_delay(fh, file_path, delay, logger):
     logger.info(f"Fichier créé.")
 
 if fh.file_exists("file/test.txt"): fh.remove_file("file/test.txt")
-threading.Thread(target=create_file_with_delay, args=(fh, "file/test.txt", 2, logger)).start()
+threading.Thread(target=create_file_with_delay, args=(fh, "file/test.txt", 3, logger)).start()
 
 if fh.wait_for_file(os.getcwd(), "file/test.txt", 10):
     logger.info("Fichier bien trouvé")
