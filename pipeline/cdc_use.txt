@@ -1,0 +1,391 @@
+Configurations les plus courantes :
+
+1) Chargement complet : annule/remplace
+Les données de la table persistante sont supprimées et remplacées par celle de la table de staging.
+
+config_json = """{
+    "staging_area" : {
+        "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "nx_staging",  "name" : "v_AAA_test_pbx"}
+    },
+    "persistent_area" : {
+        "table" :         {"schema" : "nx_business", "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "dbo",         "name" : "AAA_test_pbx"}
+    },
+    "mapping" : [
+        {"position" :  1, "persistent_column" : "id",   "staging_column_or_expression" : "id"},
+        {"position" :  2, "persistent_column" : "col1", "staging_column_or_expression" : "col1"},
+        {"position" :  3, "persistent_column" : "col2", "staging_column_or_expression" : "col2"}
+    ],
+    "sync" : {
+        "mode" : "append",
+        "action_on_table" : {
+            "delete_rows" : true
+        }
+    }
+}"""
+
+Remarques :
+- Si la volumétrie est importante et que l'on accepte que les données ne soient pas en ligne pendant la durée du chargement, on peut remplacer "delete_rows" : true par "truncate" : true
+- Les configurations de type "Chargement complet" sont à éviter si la volumétrie est élevée (risque de saturation des journaux de transactions, copie inutile de données dans la table de staging).
+
+2) Chargement complet : annule/remplace sur un périmètre restreint
+La table de staging ne contient qu'une partie des données de la table concernée (lignes créées depuis 1 an par exemple).
+Les données de la table persistante sont supprimées sur le même périmètre et remplacées par celle de la table de staging.
+
+config_json = """{
+    "staging_area" : {
+        "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "nx_staging",  "name" : "v_AAA_test_pbx"}
+    },
+    "persistent_area" : {
+        "table" :         {"schema" : "nx_business", "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "dbo",         "name" : "AAA_test_pbx"}
+    },
+    "mapping" : [
+        {"position" :  1, "persistent_column" : "id",   "staging_column_or_expression" : "id"},
+        {"position" :  2, "persistent_column" : "col1", "staging_column_or_expression" : "col1"},
+        {"position" :  3, "persistent_column" : "col2", "staging_column_or_expression" : "col2"}
+    ],
+    "sync" : {
+        "mode" : "append",
+        "action_on_table" : {
+            "delete_rows" : true,
+            "delete_rows_condition" : "<Expression de la clause WHERE correspondant au périmètre chargé dans la table de staging>"
+        }
+    }
+}"""
+
+3) Chargement complet : propagation de tous changements (ajouts, modifications, suppressions)
+Les changements opérés sur données de la table de staging par rapport à celles de la table persistante sont répercutés dans la table persistante.
+
+config_json = """{
+    "staging_area" : {
+        "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "nx_staging",  "name" : "v_AAA_test_pbx"},
+        "cdc_table" :     {"schema" : "nx_cdc",      "name" : "AAA_test_pbx"}
+    },
+    "persistent_area" : {
+        "table" :         {"schema" : "nx_business", "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "dbo",         "name" : "AAA_test_pbx"}
+    },
+    "mapping" : [
+        {"position" :  1, "persistent_column" : "id",   "staging_column_or_expression" : "id",   "is_pk" : true,  "use_for_cdc" : false},
+        {"position" :  2, "persistent_column" : "col1", "staging_column_or_expression" : "col1", "is_pk" : false, "use_for_cdc" : true },
+        {"position" :  3, "persistent_column" : "col2", "staging_column_or_expression" : "col2", "is_pk" : false, "use_for_cdc" : true }
+    ],
+    "sync" : {
+        "mode" : "scd1",
+        "deleted_rows" : {
+            "ignore" : false,
+            "soft_delete" : false
+        },
+        "technical_columns" : {
+            "pk_hash" :           {"persistent_column" : "nx_pk_hash"},
+            "row_hash" :          {"persistent_column" : "nx_row_hash"}
+        }
+    }
+}"""
+
+Remarques :
+- Ajouter les colonnes techniques "first_change_date" et "last_change_date" pour auditer les créations et de modifications des lignes
+- Utiliser le mode "soft_delete" : true et ajouter la colonne technique "is_active" pour auditer les suppressions
+- Les configurations de type "Chargement complet" sont à éviter si la volumétrie est élevée (risque de saturation des journaux de transactions, copie inutile de données dans la table de staging).
+
+4) Chargement incrémental : ajouts uniquement
+Les données de la table de staging sont insérées dans la table persistante.
+
+config_json = """{
+    "staging_area" : {
+        "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "nx_staging",  "name" : "v_AAA_test_pbx"}
+    },
+    "persistent_area" : {
+        "table" :         {"schema" : "nx_business", "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "dbo",         "name" : "AAA_test_pbx"}
+    },
+    "mapping" : [
+        {"position" :  1, "persistent_column" : "id",   "staging_column_or_expression" : "id"},
+        {"position" :  2, "persistent_column" : "col1", "staging_column_or_expression" : "col1"},
+        {"position" :  3, "persistent_column" : "col2", "staging_column_or_expression" : "col2"}
+    ],
+    "sync" : {
+        "mode" : "append"
+    }
+}"""
+
+5) Chargement incrémental : propagation des ajouts et des modifications
+Les ajouts et modifications opérés sur données de la table de staging par rapport à celles de la table persistante sont répercutés dans la table persistante.
+Les suppressions ne sont pas prises en compte, cette configuration est donc à privilégier si les données ne sont jamais supprimées physiquement de la table concernée.
+La table de staging peut ne contenir que les lignes créées ou modifiées depuis le dernier chargement (ou avant).
+
+config_json = """{
+    "staging_area" : {
+        "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "nx_staging",  "name" : "v_AAA_test_pbx"},
+        "cdc_table" :     {"schema" : "nx_cdc",      "name" : "AAA_test_pbx"}
+    },
+    "persistent_area" : {
+        "table" :         {"schema" : "nx_business", "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "dbo",         "name" : "AAA_test_pbx"}
+    },
+    "mapping" : [
+        {"position" :  1, "persistent_column" : "id",   "staging_column_or_expression" : "id",   "is_pk" : true,  "use_for_cdc" : false},
+        {"position" :  2, "persistent_column" : "col1", "staging_column_or_expression" : "col1", "is_pk" : false, "use_for_cdc" : true },
+        {"position" :  3, "persistent_column" : "col2", "staging_column_or_expression" : "col2", "is_pk" : false, "use_for_cdc" : true }
+    ],
+    "sync" : {
+        "mode" : "scd1",
+        "deleted_rows" : {
+            "ignore" : true
+        },
+        "technical_columns" : {
+            "pk_hash" :           {"persistent_column" : "nx_pk_hash"},
+            "row_hash" :          {"persistent_column" : "nx_row_hash"}
+        }
+    }
+}"""
+
+Remarques :
+- Ajouter les colonnes techniques "first_change_date" et "last_change_date" pour auditer les créations et de modifications des lignes
+- En pratique, la promesse de lignes jamais supprimées est rarement tenue. Utiliser cette configuration avec précaution.
+
+6) Chargement incrémental : propagation de tous changements (ajouts, modifications, suppressions)
+Les ajouts et modifications opérés sur données de la table de staging par rapport à celles de la table persistante sont répercutés dans la table persistante.
+La table de staging peut ne contenir que les lignes créées ou modifiées depuis le dernier chargement (ou avant).
+Les suppressions sont détectées à l'aide de la table staging des PK. Cette dernière contient les colonnes permettant l'identification unique de toutes les lignes de la table concernée (et uniquement ces colonnes).
+
+config_json = """{
+    "staging_area" : {
+        "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
+        "pk_table" :      {"schema" : "nx_staging",  "name" : "AAA_test_pbx_pk"},
+        "view" :          {"schema" : "nx_staging",  "name" : "v_AAA_test_pbx"},
+        "cdc_table" :     {"schema" : "nx_cdc",      "name" : "AAA_test_pbx"}
+    },
+    "persistent_area" : {
+        "table" :         {"schema" : "nx_business", "name" : "AAA_test_pbx"}
+        "view" :          {"schema" : "dbo",         "name" : "AAA_test_pbx"}
+    },
+    "mapping" : [
+        {"position" :  1, "persistent_column" : "id",   "staging_column_or_expression" : "id",   "is_pk" : true,  "use_for_cdc" : false},
+        {"position" :  2, "persistent_column" : "col1", "staging_column_or_expression" : "col1", "is_pk" : false, "use_for_cdc" : true },
+        {"position" :  3, "persistent_column" : "col2", "staging_column_or_expression" : "col2", "is_pk" : false, "use_for_cdc" : true }
+    ],
+    "sync" : {
+        "mode" : "scd1",
+        "deleted_rows" : {
+            "ignore" : false,
+            "soft_delete" : false,
+            "use_pk_table" : true
+        },
+        "technical_columns" : {
+            "pk_hash" :           {"persistent_column" : "nx_pk_hash"},
+            "row_hash" :          {"persistent_column" : "nx_row_hash"}
+        }
+    }
+}"""
+
+Remarques :
+- Ajouter les colonnes techniques "first_change_date" et "last_change_date" pour auditer les créations et de modifications des lignes
+- Utiliser le mode "soft_delete" : true et ajouter la colonne technique "is_active" pour auditer les suppressions
+
+7) Chargement incrémental : propagation de tous changements (ajouts, modifications, suppressions) sur un périmètre restreint
+Les changements opérés sur données de la table de staging par rapport à celles de la table persistante sont répercutés dans la table persistante.
+La table de staging ne contient qu'une partie des données de la table concernée (lignes créées depuis 1 an par exemple).
+
+config_json = """{
+    "staging_area" : {
+        "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "nx_staging",  "name" : "v_AAA_test_pbx"},
+        "cdc_table" :     {"schema" : "nx_cdc",      "name" : "AAA_test_pbx"}
+    },
+    "persistent_area" : {
+        "table" :         {"schema" : "nx_business", "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "dbo",         "name" : "AAA_test_pbx"}
+    },
+    "mapping" : [
+        {"position" :  1, "persistent_column" : "id",   "staging_column_or_expression" : "id",   "is_pk" : true,  "use_for_cdc" : false},
+        {"position" :  2, "persistent_column" : "col1", "staging_column_or_expression" : "col1", "is_pk" : false, "use_for_cdc" : true },
+        {"position" :  3, "persistent_column" : "col2", "staging_column_or_expression" : "col2", "is_pk" : false, "use_for_cdc" : true }
+    ],
+    "sync" : {
+        "mode" : "scd1",
+        "persistent_table_filter_expression" : "<Expression de la clause WHERE correspondant au périmètre chargé dans la table de staging>",
+        "deleted_rows" : {
+            "ignore" : false,
+            "soft_delete" : false,
+            "use_pk_table" : false
+        },
+        "technical_columns" : {
+            "pk_hash" :           {"persistent_column" : "nx_pk_hash"},
+            "row_hash" :          {"persistent_column" : "nx_row_hash"}
+        }
+    }
+}"""
+
+Remarques :
+- Ajouter les colonnes techniques "first_change_date" et "last_change_date" pour auditer les créations et de modifications des lignes
+- Utiliser le mode "soft_delete" : true et ajouter la colonne technique "is_active" pour auditer les suppressions
+
+8) Historisation complète des changements dans la même table (SCD2)
+Les configurations en mode SCD type 1 peuvent se décliner en SCD type 2 avec peu de changements :
+- les colonnes techniques "first_change_date", "last_change_date" et "is_active" sont obligatoires
+- le soft-delete est recommandé conserver l'historique de tous les changements
+
+L'équivalent de la configuration 7 est :
+config_json = """{
+    "staging_area" : {
+        "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "nx_staging",  "name" : "v_AAA_test_pbx"},
+        "cdc_table" :     {"schema" : "nx_cdc",      "name" : "AAA_test_pbx"}
+    },
+    "persistent_area" : {
+        "table" :         {"schema" : "nx_business", "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "dbo",         "name" : "AAA_test_pbx"}
+    },
+    "mapping" : [
+        {"position" :  1, "persistent_column" : "id",   "staging_column_or_expression" : "id",   "is_pk" : true,  "use_for_cdc" : false},
+        {"position" :  2, "persistent_column" : "col1", "staging_column_or_expression" : "col1", "is_pk" : false, "use_for_cdc" : true },
+        {"position" :  3, "persistent_column" : "col2", "staging_column_or_expression" : "col2", "is_pk" : false, "use_for_cdc" : true }
+    ],
+    "sync" : {
+        "mode" : "scd2",
+        "persistent_table_filter_expression" : "<Expression de la clause WHERE correspondant au périmètre chargé dans la table de staging>",
+        "deleted_rows" : {
+            "ignore" : false,
+            "soft_delete" : true,
+            "use_pk_table" : false
+        },
+        "technical_columns" : {
+            "pk_hash" :           {"persistent_column" : "nx_pk_hash"},
+            "row_hash" :          {"persistent_column" : "nx_row_hash"},
+            "first_change_date" : {"persistent_column" : "nx_creation_date"},
+            "last_change_date" :  {"persistent_column" : "nx_modification_date"},
+            "is_active" :         {"persistent_column" : "nx_is_active"}
+        }
+    }
+}"""
+
+9) Historisation complète des changements dans une table distincte (SCD4)
+Les configurations en mode SCD type 2 peuvent se décliner en SCD type 4 avec peu de changements :
+- la table d'historique est obligatoire
+- la colonne "is_active" n'est obligatoire qu'en soft-delete (recommandé)
+
+L'équivalent de la configuration 8 est :
+config_json = """{
+    "staging_area" : {
+        "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
+        "view" :          {"schema" : "nx_staging",  "name" : "v_AAA_test_pbx"},
+        "cdc_table" :     {"schema" : "nx_cdc",      "name" : "AAA_test_pbx"}
+    },
+    "persistent_area" : {
+        "table" :         {"schema" : "nx_business", "name" : "AAA_test_pbx"},,
+        "history_table" : {"schema" : "nx_business", "name" : "AAA_test_pbx_histo"},
+        "view" :          {"schema" : "dbo",         "name" : "AAA_test_pbx"}
+    },
+    "mapping" : [
+        {"position" :  1, "persistent_column" : "id",   "staging_column_or_expression" : "id",   "is_pk" : true,  "use_for_cdc" : false},
+        {"position" :  2, "persistent_column" : "col1", "staging_column_or_expression" : "col1", "is_pk" : false, "use_for_cdc" : true },
+        {"position" :  3, "persistent_column" : "col2", "staging_column_or_expression" : "col2", "is_pk" : false, "use_for_cdc" : true }
+    ],
+    "sync" : {
+        "mode" : "scd4",
+        "persistent_table_filter_expression" : "<Expression de la clause WHERE correspondant au périmètre chargé dans la table de staging>",
+        "deleted_rows" : {
+            "ignore" : false,
+            "soft_delete" : true,
+            "use_pk_table" : false
+        },
+        "technical_columns" : {
+            "pk_hash" :           {"persistent_column" : "nx_pk_hash"},
+            "row_hash" :          {"persistent_column" : "nx_row_hash"},
+            "first_change_date" : {"persistent_column" : "nx_creation_date"},
+            "last_change_date" :  {"persistent_column" : "nx_modification_date"},
+            "is_active" :         {"persistent_column" : "nx_is_active"}
+        }
+    }
+}"""
+
+
+Desciption du JSON de configuration
+
+{
+    "staging_area" : {
+        "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
+        "pk_table" :      {"schema" : "nx_staging",  "name" : "AAA_test_pbx_pk"},
+        "view" :          {"schema" : "nx_staging",  "name" : "v_AAA_test_pbx"},
+        "cdc_table" :     {"schema" : "nx_cdc",      "name" : "AAA_test_pbx"}
+    },
+    "persistent_area" : {
+        "table" :         {"schema" : "nx_business", "name" : "AAA_test_pbx"},
+        "history_table" : {"schema" : "nx_business", "name" : "AAA_test_pbx_histo"},
+        "view" :          {"schema" : "dbo",         "name" : "AAA_test_pbx"}
+    },
+    "mapping" : [
+        {"position" :  1, "persistent_column" : "id",   "staging_column_or_expression" : "id",   "datatype" : "int",         "is_pk" : true,  "use_for_cdc" : false},
+        {"position" :  2, "persistent_column" : "col1", "staging_column_or_expression" : "col1", "datatype" : "varchar(10)", "is_pk" : false, "use_for_cdc" : true },
+        {"position" :  3, "persistent_column" : "col2", "staging_column_or_expression" : "col2", "is_pk" : false, "use_for_cdc" : true }
+    ],
+    "sync" : {
+        "mode" : "scd2",
+        "action_on_table" : {
+            "truncate" : false,
+            "delete_rows" : false,
+            "delete_rows_condition" : null
+        },
+        "persistent_table_filter_expression" : null,
+        "deleted_rows" : {
+            "ignore" : false,
+            "soft_delete" : false,
+            "use_pk_table" : false
+        },
+        "technical_columns" : {
+            "pk_hash" :           {"persistent_column" : "nx_pk_hash"},
+            "row_hash" :          {"persistent_column" : "nx_row_hash"},
+            "first_change_date" : {"persistent_column" : "nx_creation_date"},
+            "last_change_date" :  {"persistent_column" : "nx_modification_date"},
+            "is_active" :         {"persistent_column" : "nx_is_active"}
+        },
+        "distinct_rows" : false,
+        "end_of_time_is_null" : true
+    }
+}
+
+- Bloc "staging_area" : entités de la zone de staging.
+    - table : table de staging contenant les données à propager
+    - pk_table : table de staging contenant uniquement les identifiants des lignes afin de permettre la detection des suppressions lors d'un chargement incrémental
+    - view : vue appliquant les règles du mapping (expressions SQL, type des colonnes, distinct) à la table de staging
+    - cdc_table : table dans laquelle sont enregistrées les changements détectés
+    Pour chaque entité, on définit:
+        - schema : son schéma dans la base de données
+        - name : son nom dans la base de données
+- Bloc "persistent_area" : entités de la zone de persistance.
+    - table : table persistante
+    - history_table : table de stockage des données historiques (SCD4 uniquement)
+    - view : vue de présentation des lignes actives de la table persistante masquant les colonnes techniques
+- Bloc "mapping" : mapping des colonnes entre la table de staging et la table persistante
+    - position : position de la colonne dans la table persistante. La position doit être unique dans la table. Elle est utilisée pour trier les colonnes lors du calcul des hashes, elle ne doit donc pas être modifiée.
+    - persistent_column : nom de la colonne dans la table persistante
+    - staging_column_or_expression : nom de la colonne dans la table de stagin ou expession SQL permettant son calcul.
+    - datatype : type de la colonne dans le SGBD (INT, CHAR, DATE, ...). S'il n'est pas précisé, il est détecté automatiquement.
+    - is_pk : indique si la colonne fait partie de la PK. Par PK, on entend identifiant unique des lignes, elle n'a pas besoin d'être déclarée explicitement dans la base de données.
+    - use_for_cdc : indique si la colonne est utilisée dans le calcul du hash de la ligne. D'une manière générale, on exclut les colonnes de la PK et les colonnes d'audit (en particulier la date de dernière modification)
+- Bloc "sync" : paramètres de synchronisation des données
+    - mode : mode de synchronisation (append/scd1/scd2/scd3/scd4)
+    - Bloc "action_on_table" : actions sur la table en mode append uniquement
+        - truncate : tronque la table
+        - delete_rows : supprime des lignes de la table
+        - delete_rows_condition : condition de supression de lignes de la table. Ignoré si "delete_rows" : false. Si non renseigné, toutes les lignes sont supprimées.
+    - persistent_table_filter_expression : expession SQL du filtre appliqué sur les lignes de la table persistante lors de la CDC
+    - Bloc "deleted_rows" : gestion des suppressions en mode SCD
+        - ignore : ne prend pas en compte les suppressions de lignes si vrai
+        - soft_delete : si vrai les suppressions sont gérées de manière logique (flag indiquant que la ligne est inactive, date de fin de validité)
+        - use_pk_table : utilise la table de staging contenant uniquement les identifiants des lignes pour détecter les suppressions
+    - Bloc "technical_columns" : colonnes techniques à crée
+        - pk_hash : hash SHA2-256 des colonnes de la PK. Obligatoire en mode SCD.
+        - row_hash : hash MD5 des colonnes de la CDC. Obligatoire en mode SCD.
+        - first_change_date : date de création de la ligne en mode SCD1, date de début de validité de la ligne en mode SCD2 ou 4
+        - last_change_date : date de dernière modification de la ligne en mode SCD1, date de fin de validité en mode SCD2 ou 4
+        - is_active : indique que la ligne est active
+    - distinct_rows : indique que les lignes de la table de staging doivent être sélectionnées avec le mot clé DISTINCT
+    - end_of_time_is_null : si vrai, la date de fin de validité des lignes actives est NULL. sinon elle vaut "9999-12-31 23:59:59"

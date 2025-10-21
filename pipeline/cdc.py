@@ -1,8 +1,13 @@
+import os
 import adsToolBox as ads
 
-logger = ads.Logger(ads.Logger.DEBUG, "adsLogger")
-env = ads.env(logger, 'C:/Users/mvann/Desktop/ADS/Projects/Demo/.env')
+script_name = os.path.basename(__file__)
+logger = ads.Logger(ads.Logger.DEBUG, f"adsLogger - {script_name}")
 ads.set_timer(True)
+env = ads.env(logger)
+
+# Cette démonstration montre une utilisation de l'objet CDC (Capture de Changement)
+# Voir cdc_use.txt pour voir toutes les configurations possibles
 
 connection_string = f"mssql+pymssql://{env.AFT_USER}:{env.AFT_PWD}@{env.AFT_HOST}:{env.AFT_PORT}/{env.AFT_DB}"
 config_json = """{

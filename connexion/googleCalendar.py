@@ -1,5 +1,9 @@
+import os
+import adsToolBox as ads
 from adsToolBox.googleCalendar import GoogleCalendarConnector
-from CommonLib import *
+
+script_name = os.path.basename(__file__)
+logger = ads.Logger(ads.Logger.DEBUG, f"adsLogger - {script_name}")
 
 """
 Pour une première connexion suivre la procédure : 
@@ -11,11 +15,11 @@ le paramètre "token_file" de la classe "GoogleCalendarConnector" ne doit être 
 Le fichier contenant le token est créé lors de la première connexion.
 """
 
-google_calendar=GoogleCalendarConnector({"calendar_ids":["antoine.ducoulombier@alchimiedatasolutions.com"],
-                                                    "token_file":"token.json",
-                                                    "credentials_file":"demo_creds.json"}
-                                        ,logger=logger)
+google_calender = GoogleCalendarConnector({
+    "calendar_ids": ["antoine.ducoulombier@alchimiedatasolutions.com"],
+    "token_file": "token.json",
+    "credentials_file": "demo_creds.json"
+}, logger=logger)
 
-google_calendar.connect()
-
-google_calendar.save_events_to_csv(google_calendar.get_events(),"events.csv")
+google_calender.connect()
+google_calender.save_events_to_csv(google_calender.get_events(),"events.csv")

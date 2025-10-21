@@ -10,10 +10,10 @@ tbl = [
 df = pl.DataFrame(tbl, schema=["key", "value"], orient="row")
 print(df)
 
-#Suppression des espaces sur une colonne
+# Suppression des espaces sur une colonne
 df = df.with_columns(pl.col("key").str.replace_all(" ", ""))
 print(df)
 
-#Concaténation de 2 champs
+# Concaténation de 2 champs
 df = df.with_columns(pl.concat_str(["key", "value"], separator="-").alias("value2"))
 print(df)
