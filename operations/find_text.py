@@ -1,13 +1,13 @@
+import utils
 import os
 import adsToolBox as ads
 
 script_name = os.path.basename(__file__)
 logger = ads.Logger(ads.Logger.DEBUG, f"adsLogger - {script_name}")
-ads.set_timer(True)
-env = ads.env(logger)
+ads.set_timer(state=True)
+env = ads.Env(logger)
 
-# Instanciation d'une connexion à une base PostgreSQL, ce sera notre destination
-source = ads.dbPgsql({
+source = ads.DbPgsql({
     'database': env.PG_DWH_DB,
     'user': env.PG_DWH_USER,
     'password': env.PG_DWH_PWD,
@@ -16,7 +16,7 @@ source = ads.dbPgsql({
 }, logger)
 source.connect()
 
-# Cette ligne va chercher une ligne %User1 dans toutes les tables de tous les schémas, et logger toutes les 50
+# Cette ligne va chercher un champ %User1 dans toutes les tables de tous les schémas, et logger toutes les 50
 # colonnes vérifiées, le retour est une liste de dictionnaire
 results = source.find_text_anywhere("User1%", include_views=False, schema=None, table=None, log_every=50)
 for result in results:

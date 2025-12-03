@@ -1,9 +1,10 @@
+import utils
 import os
 import adsToolBox as ads
 
 script_name = os.path.basename(__file__)
 logger = ads.Logger(ads.Logger.DEBUG, f"adsLogger - {script_name}")
-env = ads.env(logger)
+env = ads.Env(logger)
 
 # Création de l'objet Odoo
 odoo = ads.OdooConnector({

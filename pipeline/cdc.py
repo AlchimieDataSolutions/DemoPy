@@ -1,10 +1,11 @@
 import os
+import utils
 import adsToolBox as ads
 
 script_name = os.path.basename(__file__)
 logger = ads.Logger(ads.Logger.DEBUG, f"adsLogger - {script_name}")
-ads.set_timer(True)
-env = ads.env(logger)
+ads.set_timer(state=True)
+env = ads.Env(logger)
 
 # Cette démonstration montre une utilisation de l'objet CDC (Capture de Changement)
 # Voir cdc_use.txt pour voir toutes les configurations possibles

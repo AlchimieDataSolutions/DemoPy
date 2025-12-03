@@ -1,14 +1,14 @@
+import utils
 import os
 import adsToolBox as ads
 
 script_name = os.path.basename(__file__)
 logger = ads.Logger(ads.Logger.DEBUG, f"adsLogger - {script_name}")
-ads.set_timer(True)
-env = ads.env(logger)
+ads.set_timer(state=True)
+env = ads.Env(logger)
 
-# la méthode sqlExec permet d'exécuter des requêtes diverses sur la base sans retour
-
-source = ads.dbPgsql({
+# la méthode sql_exec permet d'exécuter des requêtes diverses sur la base sans vouloir de retour
+source = ads.DbPgsql({
     'database': env.PG_DWH_DB,
     'user': env.PG_DWH_USER,
     'password': env.PG_DWH_PWD,
@@ -17,8 +17,8 @@ source = ads.dbPgsql({
 }, logger)
 
 source.connect()
-source.sqlExec("DROP TABLE IF EXISTS demo_insert;")
-source.sqlExec('''
+source.sql_exec("DROP TABLE IF EXISTS demo_insert;")
+source.sql_exec('''
 CREATE TABLE IF NOT EXISTS demo_insert (
     id SERIAL PRIMARY KEY,
     tenantname VARCHAR(255),

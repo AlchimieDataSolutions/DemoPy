@@ -1,56 +1,72 @@
-import hashlib
-import fsspec
-import time
+import utils
+import os
+import adsToolBox as ads
 
-def compute_checksum(path: str, fs, algo: str = "md5") -> str:
-    """Calcule le checksum (md5, sha1, sha256, ...) d'un fichier."""
-    h = hashlib.new(algo)
-    with fs.open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            h.update(chunk)
-    return h.hexdigest()
+script_name = os.path.basename(__file__)
+logger = ads.Logger(ads.Logger.DEBUG, f"adsLogger - {script_name}")
+ads.set_timer(state=True)
+env = ads.Env(logger)
 
-def transfer_file(src_path: str, dst_path: str, src_fs, dst_fs, checksum_algo="md5"):
-    with src_fs.open(src_path, "rb") as src, dst_fs.open(dst_path, "wb") as dst:
-        dst.write(src.read())
+local_f = ads.FileHandler(
+    logger,
+    fs_url=None,
+    fs_kwargs=None,
+    batch_size=4, # batch_size signifie que local_f va lire/écrire 4 octets à la fois (4 096 par défaut)
+    retry_count=1, # retry_count signifie que chaque opération ne sera tentée qu'une seule fois (pas de retry)
+    retry_delay=1.5, # retry_delay signifie que chaque tentative sera espacée de 2s (inutile ici)
+)
 
-    src_hash = compute_checksum(src_path, src_fs, checksum_algo)
-    dst_hash = compute_checksum(dst_path, dst_fs, checksum_algo)
+print(local_f.list_dir("file")) # Liste les fichiers/dossiers à l'endroit indiqué
 
-    if src_hash != dst_hash:
-        raise ValueError(f"Checksum mismatch ({src_hash} != {dst_hash})")
-    print(f"Fichier transféré avec succès ({checksum_algo} OK).")
+local_f.write_file(
+    file_path="file/file_test.txt",
+    content=["Lorem Ipsum", "\n"], # le contenu doit être un itérable
+    mode="w", # w écrase le contenu présent, a l'ajoute à la fin et x renvoie une erreur si le fichier existe déjà
+)
 
-def transfer_with_retry(src_path, dst_path, src_fs, dst_fs, checksum_algo="md5", retries=3, delay=5):
-    """Transfert avec retry automatique en cas d'échec."""
-    for attempt in range(1, retries + 1):
-        try:
-            transfer_file(src_path, dst_path, src_fs, dst_fs, checksum_algo)
-            return
-        except Exception as e:
-            if attempt < retries:
-                print(f"Tentative {attempt} échouée: {e}. Nouvelle tentative dans {delay}s...")
-                time.sleep(delay)
-            else:
-                print(f"Toutes les tentatives ont échoué ({retries}).")
-                raise
+for chunk in local_f.read_file(
+    file_path="file/file_test.txt",
+    mode='rb', # b signifie qu'on va restituer le contenu en bytes
+    encoding = None,
+):
+    print(chunk)
 
-if __name__ == "__main__":
-    azure_options = {
-        "account_name": "user",
-        "account_key": "key",
-    }
+local_f.transfer_file(
+    src_path="file/file_test.txt",
+    dst_path = "file/file_test_copy.txt",
+    dst_file_handler = None, # On peut fournir un autre FileHandler si le contexte est différent
+    mode = "a",
+    fastcheck = False, # à True/par défaut, compare les tailles du fichier original à celui copié
+    # à False, génère le checksum via protocole MD5 pour les comparer
+) # C'est un transfert pur si on appliquer des filtre au contenu il faudra utiliser read_file et write_file
 
-    smb_options = {
-        "host": "host",
+exit()
+
+# FileHandler azure
+azure_f = ads.FileHandler(
+    logger,
+    fs_url="az://url",
+    fs_kwargs={
+        "account_name": "ACCOUNT",
+        "sas_token": "CLE SAS",
+    },
+)
+
+# FileHandler FTP
+ftp_f = ads.FileHandler(
+    logger,
+    fs_url="ftp://url",
+    fs_kwargs={
         "username": "user",
-        "password": "password"
-    }
+        "password": "pwd"
+    },
+)
 
-    src_path = "az:source"
-    dst_path = "smb:destination"
-
-    src_fs = fsspec.filesystem("az", **azure_options)
-    dst_fs = fsspec.filesystem("smb", **smb_options)
-
-    transfer_with_retry(src_path, dst_path, src_fs, dst_fs, checksum_algo="sha256", retries=3, delay=5)
+smb_f = ads.FileHandler(
+    logger,
+    fs_url="smb://url",
+    fs_kwargs={
+        "username": "user",
+        "password": "pwd"
+    },
+)

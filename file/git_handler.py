@@ -1,17 +1,18 @@
+import utils
 import os
 import adsToolBox as ads
 
 script_name = os.path.basename(__file__)
 logger = ads.Logger(ads.Logger.DEBUG, f"adsLogger - {script_name}")
-ads.set_timer(True)
-env = ads.env(logger)
+ads.set_timer(state=True)
+env = ads.Env(logger)
 
 token = env.GITHUB_TOKEN
 repo = f"AlchimieDataSolutions/{getattr(env, 'GITHUB_REPO', None)}"
 branch = env.GITHUB_BRANCH if hasattr(env, 'GITHUB_BRANCH') else None
 
 # Attention, la destination est déjà un repo avec un .git dedans ou alors n'existe pas
-# Si le dossier cible est un dossier vide, ça ne fonctionnera pas
+# Si le dossier cible est un dossier vide, ça ne fonctionnera pas, la commande doit créer le dossier
 destination = r"C:\Users\mvann\Desktop\ADS\Projects\TEST"
 
 gh = ads.GitHandler(token, logger)

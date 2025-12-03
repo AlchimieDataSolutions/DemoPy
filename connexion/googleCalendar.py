@@ -1,6 +1,6 @@
+import utils
 import os
 import adsToolBox as ads
-from adsToolBox.googleCalendar import GoogleCalendarConnector
 
 script_name = os.path.basename(__file__)
 logger = ads.Logger(ads.Logger.DEBUG, f"adsLogger - {script_name}")
@@ -15,7 +15,7 @@ le paramètre "token_file" de la classe "GoogleCalendarConnector" ne doit être 
 Le fichier contenant le token est créé lors de la première connexion.
 """
 
-google_calender = GoogleCalendarConnector({
+google_calender = ads.GoogleCalendarConnector({
     "calendar_ids": ["antoine.ducoulombier@alchimiedatasolutions.com"],
     "token_file": "token.json",
     "credentials_file": "demo_creds.json"

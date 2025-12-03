@@ -1,4 +1,5 @@
-# Cet import va lancer le script pipeline.pipeline qui met dans deux bases (une Postgre et une dbMysql) le même contenu
+# Cet import va lancer le script pipeline.pipeline qui met dans deux bases (une Postgre et une dbMysql)
+# le même contenu
 from pipeline.pipeline import table, source_pg, source_mysql, ads, os
 
 script_name = os.path.basename(__file__)
@@ -31,7 +32,7 @@ dc = ads.DataComparator({
     'db_source_2': source_mysql,
     'query_source_1': query_pg,
     'query_source_2': query_mysql,
-    'batch_size': 10_000 # par défaut à 10_000
+    'batch_size': 10_000,
 }, logger)
 
 # check_dtypes à True signifie qu'on va aussi faire attention aux types des données renvoyées
