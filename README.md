@@ -48,11 +48,8 @@ env = ads.Env(logger, file=None)
 
 ### Démonstrations
 
-Dans les dossiers connexion, dataframe, file, logger, pipeline et sqlQuery se trouvent des scripts qui illustrent des
+Dans les dossiers connexion, dataframe, file, logger, mail, operations et pipeline se trouvent des scripts qui illustrent des
 traitement génériques, utilisant pour la plupart la librairie adsToolBox.
-
-Par la suite, des lignes de code se répétant et ne participant pas à la démonstration courante sont importées depuis 
-CommonLib.py.
 
 ## Contribution
 
