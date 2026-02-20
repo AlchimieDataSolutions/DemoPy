@@ -39,11 +39,11 @@ Utiliser cette méthode pour gérer les configurations d'environnement.
 
 ```python
 import adsToolBox as ads
-import logging
+from pathlib import Path
 
-logger = ads.Logger(None, logging.DEBUG, "EnvLogger")
-
-env = ads.env(logger, 'lien absolu vers le .env')
+script_name = Path(__file__).name
+logger = ads.Logger(ads.Logger.DEBUG, f"adsLogger - {script_name}")
+env = ads.Env(logger, file=None)
 ```
 
 ### Démonstrations
