@@ -35,7 +35,7 @@ local_f.transfer_file(
     src_path="file/file_test.txt",
     dst_path = "file/file_test_copy.txt",
     dst_file_handler = None, # On peut fournir un autre FileHandler si le contexte est différent
-    mode = "a",
+    mode = "w",
     fastcheck = False, # à True/par défaut, compare les tailles du fichier original à celui copié
     # à False, génère le checksum via protocole MD5 pour les comparer
 ) # C'est un transfert pur si on appliquer des filtre au contenu il faudra utiliser read_file et write_file

@@ -29,6 +29,7 @@ email_ids = mr.get_email(
 )
 
 print(f"{len(email_ids)} emails non lus")
+exit()
 
 # Lisons le premier mail
 email_id = email_ids[0]
