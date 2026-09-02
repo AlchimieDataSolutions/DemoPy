@@ -28,6 +28,7 @@ valeurs_tuples = [tuple(d.values()) for d in data]
 logger.info("Noms des clés : "+ str(noms_cles))
 logger.info("Valeurs sous forme de tuples : "+ str(valeurs_tuples))
 
+# adstoolbox[pgsql]
 db = ads.DbPgsql({
     'database':env.PG_DWH_DB,
     'user':env.PG_DWH_USER,

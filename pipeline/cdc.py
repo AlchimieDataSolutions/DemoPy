@@ -10,6 +10,7 @@ env = ads.Env(logger)
 # Cette démonstration montre une utilisation de l'objet CDC (Capture de Changement)
 # Voir cdc_use.txt pour voir toutes les configurations possibles
 
+# adstoolbox[pymssql]
 connection_string = f"mssql+pymssql://{env.AFT_USER}:{env.AFT_PWD}@{env.AFT_HOST}:{env.AFT_PORT}/{env.AFT_DB}"
 config_json = """{
     "staging_area" : {
@@ -53,5 +54,6 @@ config_json = """{
     }
 }"""
 
+# adstoolbox[cdc]
 cdc = ads.ChangeDataCapture(config_json, connection_string, logger)
 cdc.run()

@@ -19,6 +19,7 @@ env = ads.Env(logger)
 
 logger.info("Début de la démonstration.")
 
+# adstoolbox[pgsql]
 # Instanciation d'une connexion à une base PostgreSQL
 source = ads.DbPgsql({'database':env.PG_DWH_DB
                     , 'user':env.PG_DWH_USER
@@ -31,9 +32,6 @@ logger.set_connection(
     source, # La base dans laquelle on insère
     ads.Logger.DEBUG, # Tous les logs >= DEBUG seront insérés dans la table LOGS_details
 )
-
-# Si les tables de logs n'existent pas, il faut appeler (échoue si elles existent)
-logger.create_logs_tables()
 
 logger.debug("Message de debug")
 logger.info("Message d'info")

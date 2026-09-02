@@ -9,6 +9,7 @@ ads.set_timer(state=True)
 env = ads.Env(logger)
 
 # Instanciation d'une connexion à une base PostgreSQL, ce sera notre destination
+# adstoolbox[pgsql]
 source_pg = ads.DbPgsql({
     'database': env.PG_DWH_DB,
     'user': env.PG_DWH_USER,
@@ -18,6 +19,7 @@ source_pg = ads.DbPgsql({
 }, logger)
 
 # Instanciation d'une connexion à une base MySQL, ce sera notre source
+# adstoolbox[mysql]
 source_mysql = ads.DbMysql({
     'database': env.MYSQL_DWH_DB,
     'user': env.MYSQL_DWH_USER,

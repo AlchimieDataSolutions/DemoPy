@@ -7,6 +7,7 @@ logger = ads.Logger(ads.Logger.DEBUG, f"adsLogger - {script_name}")
 ads.set_timer(state=True)
 env = ads.Env(logger)
 
+# adstoolbox[pgsql]
 source = ads.DbPgsql({
     'database': env.PG_DWH_DB,
     'user': env.PG_DWH_USER,
@@ -22,6 +23,8 @@ source.connect()
 generator = source.sql_query("SELECT * FROM insert_test;")
 
 # Ceci est la méthode la plus simple pour parcourir ces données
+row = None
 for batch in generator:
     for row in batch:
-        data = row
+        continue
+print(row)

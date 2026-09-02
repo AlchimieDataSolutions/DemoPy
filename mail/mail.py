@@ -29,7 +29,6 @@ email_ids = mr.get_email(
 )
 
 print(f"{len(email_ids)} emails non lus")
-exit()
 
 # Lisons le premier mail
 email_id = email_ids[0]
@@ -39,6 +38,7 @@ email_content = mr.read_email(
 )
 print(f"📩 Contenu du mail:\n{email_content['message']}")
 
+# adstoolbox[files]
 local_f = ads.FileHandler(logger)
 
 if "attachment" in email_content:

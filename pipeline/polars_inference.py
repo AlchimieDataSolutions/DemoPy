@@ -9,6 +9,8 @@ env = ads.Env(logger)
 
 # Polars va automatiquement chercher à inférer sur les données pour définir leur type
 # mais c'est quelque chose qu'on peut éviter
+
+# adstoolbox[pgsql]
 source_pg = ads.DbPgsql({
     'database': env.PG_DWH_DB,
     'user': env.PG_DWH_USER,
@@ -18,6 +20,7 @@ source_pg = ads.DbPgsql({
 }, logger)
 
 # Instanciation d'une connexion à une base MySQL, ce sera notre source
+# adstoolbox[mysql]
 source_mysql = ads.DbMysql({
     'database': env.MYSQL_DWH_DB,
     'user': env.MYSQL_DWH_USER,
@@ -46,7 +49,7 @@ cols = [
 # On remplit la source
 print(source_mysql.insert_bulk('', table, cols, data))
 
-# Il faut définir les types des colonnes de la destination
+# Il faut définir nous-mêmes les types des colonnes de la destination
 cols_def = [
     'INTEGER', 'VARCHAR(255)', 'CHAR(100)', 'TEXT', 'INTEGER', 'BIGINT', 'NUMERIC(18,6)', 'NUMERIC(10,2)',
     'DOUBLE PRECISION', 'REAL', 'DATE', 'TIMESTAMP', 'TIMESTAMP', 'TIME', 'BOOLEAN', 'UUID'

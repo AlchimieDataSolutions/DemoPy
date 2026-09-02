@@ -1,3 +1,4 @@
+# adstoolbox[files]
 import utils
 import os
 import adsToolBox as ads
@@ -21,12 +22,12 @@ print(local_f.list_dir("file")) # Liste les fichiers/dossiers à l'endroit indiq
 local_f.write_file(
     file_path="file/file_test.txt",
     content=["Lorem Ipsum", "\n"], # le contenu doit être un itérable
-    mode="w", # w écrase le contenu présent, a l'ajoute à la fin et x renvoie une erreur si le fichier existe déjà
+    mode="w", # 'w' écrase le contenu présent, 'a' l'ajoute à la fin et 'x' renvoie une erreur si le fichier existe déjà
 )
 
 for chunk in local_f.read_file(
     file_path="file/file_test.txt",
-    mode='rb', # b signifie qu'on va restituer le contenu en bytes
+    mode='rb', # 'b' signifie qu'on va restituer le contenu en bytes
     encoding = None,
 ):
     print(chunk)
@@ -38,7 +39,7 @@ local_f.transfer_file(
     mode = "w",
     fastcheck = False, # à True/par défaut, compare les tailles du fichier original à celui copié
     # à False, génère le checksum via protocole MD5 pour les comparer
-) # C'est un transfert pur si on appliquer des filtre au contenu il faudra utiliser read_file et write_file
+) # C'est un transfert pur, si on applique des filtre au contenu il faudra utiliser read_file et write_file
 
 exit()
 

@@ -8,6 +8,7 @@ ads.set_timer(state=True)
 env = ads.Env(logger)
 
 # Instanciation d'une connexion à une base PostgreSQL, ce sera notre destination
+# adstoolbox[pgsql]
 source_pg = ads.DbPgsql({
     'database': env.PG_DWH_DB,
     'user': env.PG_DWH_USER,

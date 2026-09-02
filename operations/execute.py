@@ -8,6 +8,7 @@ ads.set_timer(state=True)
 env = ads.Env(logger)
 
 # la méthode sql_exec permet d'exécuter des requêtes diverses sur la base sans vouloir de retour
+# adstoolbox[pgsql]
 source = ads.DbPgsql({
     'database': env.PG_DWH_DB,
     'user': env.PG_DWH_USER,

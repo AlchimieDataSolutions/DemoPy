@@ -13,6 +13,7 @@ ads.set_timer(state=True)
 
 # La plupart des fonctions d'adsToolBox sont chronométrés par défaut
 # Instanciation d'une connexion à une base PostgreSQL
+# adstoolbox[pgsql]
 source = ads.DbPgsql({'database':env.PG_DWH_DB
                     , 'user':env.PG_DWH_USER
                     , 'password':env.PG_DWH_PWD

@@ -1,3 +1,4 @@
+# adstoolbox[dataframe] ou adstoolbox[pgsql/mssql/mysql] installe polars
 import polars as pl
 
 tbl = [

@@ -8,6 +8,8 @@ ads.set_timer(state=True)
 env = ads.Env(logger)
 
 # La méthode sql_scalaire permet de ne renvoyer qu'une seule valeur
+
+# adstoolbox[pgsql]
 source = ads.DbPgsql({
     'database': env.PG_DWH_DB,
     'user': env.PG_DWH_USER,
