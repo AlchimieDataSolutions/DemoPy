@@ -68,7 +68,6 @@ def build_data(nb_lignes: int = 50_000) -> list[list]:
         for i in range(1, nb_lignes + 1)
     ]
 
-
 # Rétrocompatibilité : `utils.data` reste disponible mais n'est construit
 # qu'au premier accès, grâce au __getattr__ de module (PEP 562) — le même
 # mécanisme que celui qu'adsToolBox utilise pour ses propres modules.
