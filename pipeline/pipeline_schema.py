@@ -54,7 +54,7 @@ cols = [
 cols_def = [
     "INTEGER", "VARCHAR(255)", "CHAR(100)", "TEXT", "INTEGER", "BIGINT",
     "NUMERIC(18,6)", "NUMERIC(10,2)", "DOUBLE PRECISION", "REAL", "DATE",
-    "TIMESTAMP", "TIMESTAMP", "TIME", "BOOLEAN", "UUID",
+    "TIMESTAMP", "TIMESTAMP", "TIME", "INTEGER", "UUID",
 ]
 
 source_mysql.connect()
