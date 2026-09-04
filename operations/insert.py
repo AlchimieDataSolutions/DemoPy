@@ -1,65 +1,140 @@
-import utils
+# adstoolbox[pgsql]
+"""
+Écriture : les six méthodes d'insertion et de fusion.
+"""
 import os
-from uuid import uuid4
+import sys
+from pathlib import Path
+
 import adsToolBox as ads
-from datetime import datetime, date, time
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import utils  # noqa: E402
 
 script_name = os.path.basename(__file__)
 logger = ads.Logger(ads.Logger.DEBUG, f"adsLogger - {script_name}")
 ads.set_timer(state=True)
-env = ads.Env(logger)
+env = ads.Env(logger=logger)
 
-# adstoolbox[pgsql]
-source = ads.DbPgsql({
-    'database': env.PG_DWH_DB,
-    'user': env.PG_DWH_USER,
-    'password': env.PG_DWH_PWD,
-    'port': env.PG_DWH_PORT,
-    'host': env.PG_DWH_HOST
-}, logger)
-
-# Ne pas oublier de se connecter
+source = ads.DbPgsql(
+    {
+        "database": env.PG_DWH_DB,
+        "user": env.PG_DWH_USER,
+        "password": env.PG_DWH_PWD,
+        "port": env.PG_DWH_PORT,
+        "host": env.PG_DWH_HOST,
+    },
+    logger=logger,
+)
 source.connect()
 
-source.sql_exec("TRUNCATE TABLE insert_test;")
+table = "insert_test"
 cols = [
-    'id_int', 'name_varchar', 'code_char', 'description_text', 'count_int', 'id_bigint', 'amount_numeric',
-    'price_numeric', 'ratio_double', 'score_real', 'created_date', 'created_at', 'updated_at', 'event_time',
-    'is_active', 'uuid_key'
-]
-data = [
-    [
-        i, f"User{i}", f"C{i:03d}", f"Produit {i}", i*2, 1000000000000 + i, round(10.5 * i, 3), round(.5 * i, 2),
-        round(1.0 + i * .1, 2), round(.5 + i * .05, 2), date(2025, 10, (i%28)+1),
-        datetime(2025, 10, (i % 28)+1, 8+i%12, 0, 0),
-        datetime(2025, 10, (i % 28)+1, 16, i % 60, 0),
-        time(9+i%12, 30, 0), i % 2 == 0,
-        str(uuid4())
-    ]
-    for i in range(1, 50_001)
+    "id_int", "name_varchar", "code_char", "description_text", "count_int",
+    "id_bigint", "amount_numeric", "price_numeric", "ratio_double",
+    "score_real", "created_date", "created_at", "updated_at", "event_time",
+    "is_active", "uuid_key",
 ]
 
-# Différentes méthode d'insertion existent
+# utils.build_data() remplace le jeu de données qui était recopié en dur
+# dans ce script. Il est construit à la demande : 50 000 lignes, ~3,5 s.
+data = utils.build_data(nb_lignes=50_000)
 
-# Celle-ci n'insère qu'une seule ligne
-source.insert('', 'insert_test', cols, data[0])
+source.sql_exec(query=f"TRUNCATE TABLE {table};")
 
-# Celle-ci insère des batch via executemany
-source.insert_many('', 'insert_test', cols, data[1:1_000])
+# ---------------------------------------------------------------------------
+# 1. insert : UNE ligne
+# ---------------------------------------------------------------------------
+# `row` est une LISTE DE VALEURS, pas une liste de lignes. C'est la seule
+# méthode du lot à prendre une ligne unique — d'où le nom du paramètre.
+resultat = source.insert(
+    schema="",           # "" ou None => table sans préfixe de schéma
+    table=table,
+    cols=cols,
+    row=data[0],
+)
 
-# Celle-ci insère des batch via une insertion en bulk bien plus rapide
-source.insert_bulk('', 'insert_test', cols, data[1_001:])
+# Les six méthodes renvoient le même triplet :
+#   (statut, erreur, lignes en échec)
+# avec statut à "SUCCESS" ou "ERROR". Elles ne LÈVENT pas d'exception sur un
+# échec d'insertion : il faut tester le statut, sinon l'échec passe
+# inaperçu. C'est ce mécanisme que Pipeline exploite pour consigner ses
+# rejets sans interrompre le run.
+statut, erreur, en_echec = resultat
+logger.info(f"insert -> statut={statut}, erreur={erreur}")
 
-# Une autre opération existe: upsert
-# On aura besoin de conflict_cols qui répertorie les PK sur lesquels la comparaison sera faite pour savoir si on
-# insère ou si on met à jour
+# ---------------------------------------------------------------------------
+# 2. insert_many : plusieurs lignes via executemany
+# ---------------------------------------------------------------------------
+# `rows` est une liste de listes. Passe par l'executemany du driver :
+# une requête paramétrée, réexécutée pour chaque ligne.
+print(source.insert_many(schema="", table=table, cols=cols, rows=data[1:1_000]))
 
-source.sql_exec("""
-ALTER TABLE insert_test DROP CONSTRAINT IF EXISTS unique_id_name;
-ALTER TABLE insert_test ADD CONSTRAINT unique_id_name UNIQUE (id_int, name_varchar);""")
-source.upsert('', 'insert_test', cols, data[0], cols[:2])
+# ---------------------------------------------------------------------------
+# 3. insert_bulk : plusieurs lignes en masse
+# ---------------------------------------------------------------------------
+# Nettement plus rapide sur du volume : la toolbox utilise le mécanisme de
+# chargement en masse du backend (COPY sur PostgreSQL). À préférer dès
+# quelques milliers de lignes.
+#
+# Contrepartie : le contrôle des erreurs est moins fin. Un lot en échec est
+# rejeté en bloc, là où insert_many peut isoler la ligne fautive.
+print(source.insert_bulk(schema="", table=table, cols=cols, rows=data[1_001:]))
 
-# De la même façon, on a un upsertMany et un upsertBulk (la dernière crée une table temporaire)
-source.upsert_many('', 'insert_test', cols, data[1:1_000], cols[:2])
+# ---------------------------------------------------------------------------
+# 4. La contrainte d'unicité, prérequis de l'upsert
+# ---------------------------------------------------------------------------
+# Les trois méthodes d'upsert reposent sur ON CONFLICT : sans contrainte
+# UNIQUE ou PRIMARY KEY sur les colonnes de conflit, la base refuse la
+# requête. Elle n'est jamais créée automatiquement.
+source.sql_exec(query=f"""
+ALTER TABLE {table} DROP CONSTRAINT IF EXISTS unique_id_name;
+ALTER TABLE {table} ADD CONSTRAINT unique_id_name UNIQUE (id_int, name_varchar);""")
 
-source.upsert_bulk('', 'insert_test', cols, data[1_001:], cols[:2])
+# ---------------------------------------------------------------------------
+# 5. upsert, upsert_many, upsert_bulk
+# ---------------------------------------------------------------------------
+# Même découpage que les trois insert, avec un paramètre de plus :
+# conflict_cols, la LISTE des colonnes qui identifient une ligne existante.
+# Elle doit correspondre exactement à la contrainte créée ci-dessus, et être
+# un sous-ensemble de cols.
+conflict_cols = cols[:2]   # ["id_int", "name_varchar"]
+
+source.upsert(
+    schema="",
+    table=table,
+    cols=cols,
+    row=data[0],
+    conflict_cols=conflict_cols,
+)
+
+source.upsert_many(
+    schema="",
+    table=table,
+    cols=cols,
+    rows=data[1:1_000],
+    conflict_cols=conflict_cols,
+)
+
+# upsert_bulk crée une table temporaire, y charge les lignes en masse, puis
+# fusionne en une seule requête. C'est le mode le plus rapide sur du volume.
+source.upsert_bulk(
+    schema="",
+    table=table,
+    cols=cols,
+    rows=data[1_001:],
+    conflict_cols=conflict_cols,
+)
+
+# ---------------------------------------------------------------------------
+# 6. Choisir
+# ---------------------------------------------------------------------------
+#   une ligne, ponctuellement            -> insert / upsert
+#   quelques centaines, erreurs à isoler -> insert_many / upsert_many
+#   milliers ou plus                     -> insert_bulk / upsert_bulk
+#
+# Pour un transfert entre deux bases, ne pilotez pas ces méthodes à la
+# main : Pipeline s'en charge, avec les batchs, le typage et la collecte des
+# rejets. Voir pipeline/pipeline.py, et pipeline_upsert.py pour l'upsert.
+
+source.disconnect()
