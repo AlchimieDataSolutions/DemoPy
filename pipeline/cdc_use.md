@@ -1,8 +1,22 @@
-Configurations les plus courantes :
+# Configurations CDC les plus courantes
 
-1) Chargement complet : annule/remplace
+Ce fichier accompagne `cdc.py`. Chaque section donne une configuration
+complète, à adapter à vos schémas et à vos colonnes.
+
+Les exemples ci-dessous visent SQL Server (`nx_staging`, `nx_business`,
+`dbo`). Sur PostgreSQL, remplacez les schémas par les vôtres et n'oubliez
+pas l'extension `pgcrypto`, requise par l'empreinte de clé :
+
+```sql
+CREATE EXTENSION pgcrypto;
+```
+
+
+## 1. Chargement complet : annule/remplace
+
 Les données de la table persistante sont supprimées et remplacées par celle de la table de staging.
 
+```python
 config_json = """{
     "staging_area" : {
         "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
@@ -29,10 +43,14 @@ Remarques :
 - Si la volumétrie est importante et que l'on accepte que les données ne soient pas en ligne pendant la durée du chargement, on peut remplacer "delete_rows" : true par "truncate" : true
 - Les configurations de type "Chargement complet" sont à éviter si la volumétrie est élevée (risque de saturation des journaux de transactions, copie inutile de données dans la table de staging).
 
-2) Chargement complet : annule/remplace sur un périmètre restreint
+```
+
+## 2. Chargement complet : annule/remplace sur un périmètre restreint
+
 La table de staging ne contient qu'une partie des données de la table concernée (lignes créées depuis 1 an par exemple).
 Les données de la table persistante sont supprimées sur le même périmètre et remplacées par celle de la table de staging.
 
+```python
 config_json = """{
     "staging_area" : {
         "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
@@ -56,9 +74,13 @@ config_json = """{
     }
 }"""
 
-3) Chargement complet : propagation de tous changements (ajouts, modifications, suppressions)
+```
+
+## 3. Chargement complet : propagation de tous changements (ajouts, modifications, suppressions)
+
 Les changements opérés sur données de la table de staging par rapport à celles de la table persistante sont répercutés dans la table persistante.
 
+```python
 config_json = """{
     "staging_area" : {
         "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
@@ -92,9 +114,13 @@ Remarques :
 - Utiliser le mode "soft_delete" : true et ajouter la colonne technique "is_active" pour auditer les suppressions
 - Les configurations de type "Chargement complet" sont à éviter si la volumétrie est élevée (risque de saturation des journaux de transactions, copie inutile de données dans la table de staging).
 
-4) Chargement incrémental : ajouts uniquement
+```
+
+## 4. Chargement incrémental : ajouts uniquement
+
 Les données de la table de staging sont insérées dans la table persistante.
 
+```python
 config_json = """{
     "staging_area" : {
         "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
@@ -114,11 +140,15 @@ config_json = """{
     }
 }"""
 
-5) Chargement incrémental : propagation des ajouts et des modifications
+```
+
+## 5. Chargement incrémental : propagation des ajouts et des modifications
+
 Les ajouts et modifications opérés sur données de la table de staging par rapport à celles de la table persistante sont répercutés dans la table persistante.
 Les suppressions ne sont pas prises en compte, cette configuration est donc à privilégier si les données ne sont jamais supprimées physiquement de la table concernée.
 La table de staging peut ne contenir que les lignes créées ou modifiées depuis le dernier chargement (ou avant).
 
+```python
 config_json = """{
     "staging_area" : {
         "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
@@ -150,11 +180,15 @@ Remarques :
 - Ajouter les colonnes techniques "first_change_date" et "last_change_date" pour auditer les créations et de modifications des lignes
 - En pratique, la promesse de lignes jamais supprimées est rarement tenue. Utiliser cette configuration avec précaution.
 
-6) Chargement incrémental : propagation de tous changements (ajouts, modifications, suppressions)
+```
+
+## 6. Chargement incrémental : propagation de tous changements (ajouts, modifications, suppressions)
+
 Les ajouts et modifications opérés sur données de la table de staging par rapport à celles de la table persistante sont répercutés dans la table persistante.
 La table de staging peut ne contenir que les lignes créées ou modifiées depuis le dernier chargement (ou avant).
 Les suppressions sont détectées à l'aide de la table staging des PK. Cette dernière contient les colonnes permettant l'identification unique de toutes les lignes de la table concernée (et uniquement ces colonnes).
 
+```python
 config_json = """{
     "staging_area" : {
         "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
@@ -163,7 +197,7 @@ config_json = """{
         "cdc_table" :     {"schema" : "nx_cdc",      "name" : "AAA_test_pbx"}
     },
     "persistent_area" : {
-        "table" :         {"schema" : "nx_business", "name" : "AAA_test_pbx"}
+        "table" :         {"schema" : "nx_business", "name" : "AAA_test_pbx"},
         "view" :          {"schema" : "dbo",         "name" : "AAA_test_pbx"}
     },
     "mapping" : [
@@ -189,10 +223,14 @@ Remarques :
 - Ajouter les colonnes techniques "first_change_date" et "last_change_date" pour auditer les créations et de modifications des lignes
 - Utiliser le mode "soft_delete" : true et ajouter la colonne technique "is_active" pour auditer les suppressions
 
-7) Chargement incrémental : propagation de tous changements (ajouts, modifications, suppressions) sur un périmètre restreint
+```
+
+## 7. Chargement incrémental : propagation de tous changements (ajouts, modifications, suppressions) sur un périmètre restreint
+
 Les changements opérés sur données de la table de staging par rapport à celles de la table persistante sont répercutés dans la table persistante.
 La table de staging ne contient qu'une partie des données de la table concernée (lignes créées depuis 1 an par exemple).
 
+```python
 config_json = """{
     "staging_area" : {
         "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
@@ -227,12 +265,16 @@ Remarques :
 - Ajouter les colonnes techniques "first_change_date" et "last_change_date" pour auditer les créations et de modifications des lignes
 - Utiliser le mode "soft_delete" : true et ajouter la colonne technique "is_active" pour auditer les suppressions
 
-8) Historisation complète des changements dans la même table (SCD2)
+```
+
+## 8. Historisation complète des changements dans la même table (SCD2)
+
 Les configurations en mode SCD type 1 peuvent se décliner en SCD type 2 avec peu de changements :
 - les colonnes techniques "first_change_date", "last_change_date" et "is_active" sont obligatoires
 - le soft-delete est recommandé conserver l'historique de tous les changements
 
 L'équivalent de la configuration 7 est :
+```python
 config_json = """{
     "staging_area" : {
         "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
@@ -266,12 +308,16 @@ config_json = """{
     }
 }"""
 
-9) Historisation complète des changements dans une table distincte (SCD4)
+```
+
+## 9. Historisation complète des changements dans une table distincte (SCD4)
+
 Les configurations en mode SCD type 2 peuvent se décliner en SCD type 4 avec peu de changements :
 - la table d'historique est obligatoire
 - la colonne "is_active" n'est obligatoire qu'en soft-delete (recommandé)
 
 L'équivalent de la configuration 8 est :
+```python
 config_json = """{
     "staging_area" : {
         "table" :         {"schema" : "nx_staging",  "name" : "AAA_test_pbx"},
@@ -279,7 +325,7 @@ config_json = """{
         "cdc_table" :     {"schema" : "nx_cdc",      "name" : "AAA_test_pbx"}
     },
     "persistent_area" : {
-        "table" :         {"schema" : "nx_business", "name" : "AAA_test_pbx"},,
+        "table" :         {"schema" : "nx_business", "name" : "AAA_test_pbx"},
         "history_table" : {"schema" : "nx_business", "name" : "AAA_test_pbx_histo"},
         "view" :          {"schema" : "dbo",         "name" : "AAA_test_pbx"}
     },
@@ -389,3 +435,4 @@ Desciption du JSON de configuration
         - is_active : indique que la ligne est active
     - distinct_rows : indique que les lignes de la table de staging doivent être sélectionnées avec le mot clé DISTINCT
     - end_of_time_is_null : si vrai, la date de fin de validité des lignes actives est NULL. sinon elle vaut "9999-12-31 23:59:59"
+```
