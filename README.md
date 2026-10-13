@@ -7,7 +7,7 @@ fonctionnalité, commenté ligne à ligne, avec les subtilités et les pièges.
 Chaque script est autonome et exécutable seul. Les commentaires font partie de
 la démonstration : lisez-les autant que vous exécutez le code.
 
-- **Version de la librairie ciblée** : `2026.10.2.1`
+- **Version de la librairie ciblée** : `2026.10.13`
 - **Python** : `>= 3.10`
 
 ## Table des matières
@@ -79,7 +79,7 @@ avertissement, et rien n'est installé.
 
 ```
 $ pip install "adstoolbox[pymssql]"
-WARNING: adstoolbox 2026.10.2.1 does not provide the extra 'pymssql'
+WARNING: adstoolbox 2026.10.13 does not provide the extra 'pymssql'
 ```
 
 Le nom correct est `mssql`. Les neuf extras valides sont ceux du tableau

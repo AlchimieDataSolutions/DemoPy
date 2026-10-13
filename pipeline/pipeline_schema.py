@@ -126,27 +126,20 @@ for nom, dtype in schema.items():
 
 # Quatre comportements à connaître.
 #
-# a) cols_def ne GARANTIT pas un type Polars précis. Un type SQL absent de
-#    la table de correspondance retombe sur Utf8, avec un simple log DEBUG.
-#    Et la table ne couvre pas tout : lancez ce script et regardez les
-#    lignes "Type SQL non reconnu". Avec les cols_def ci-dessus, cinq
-#    colonnes sur seize partent en texte :
+# a) cols_def ne garantit pas le type qu'on imagine. Regardez la sortie
+#    ci-dessus : amount_numeric et price_numeric donnent String, pas un
+#    type numérique.
 #
-#      NUMERIC(18,6), NUMERIC(10,2), DOUBLE PRECISION, REAL, UUID
+#    C'est VOULU. Un Float64 perd la précision au-delà d'une quinzaine de
+#    chiffres significatifs : un aller-retour sur NUMERIC(18,6) transforme
+#    123456789012.345678 en 123456789012.345670. Le texte préserve la
+#    valeur, et PostgreSQL la reconvertit à l'insertion. DECIMAL, MONEY et
+#    SMALLMONEY suivent la même règle.
 #
-#    Ce ne sont pas des fautes : ce sont des types PostgreSQL parfaitement
-#    valides, simplement absents de la table. Le transfert fonctionne —
-#    PostgreSQL reconvertit le texte à l'insertion — mais le schéma Polars
-#    n'est pas celui qu'on croit.
-#
-#    Pour les décimaux exacts, ce repli est d'ailleurs SOUHAITABLE : un
-#    Float64 perd la précision au-delà d'une quinzaine de chiffres
-#    significatifs, et un aller-retour sur NUMERIC(18,6) transforme
-#    123456789012.345678 en 123456789012.345670. Le texte, lui, préserve la
-#    valeur.
-#
-#    Conséquence pratique : passez les logs en DEBUG au moins une fois sur
-#    un nouveau transfert, pour savoir quelles colonnes sont concernées.
+#    Jusqu'à la 2026.10.13, DOUBLE PRECISION, REAL et UUID retombaient eux
+#    aussi en Utf8, faute d'être dans la table de correspondance — avec un
+#    simple log DEBUG "Type SQL non reconnu". Ils sont désormais résolus,
+#    respectivement en Float64, Float64 et String.
 #
 # a bis) Une FAUTE DE FRAPPE produit exactement le même repli, donc le même
 #    silence. "NUMERICC" ci-dessous donne une colonne texte sans que rien
@@ -210,11 +203,11 @@ logger.info(f"{resultats['nb_lines_success']} ligne(s) insérée(s), "
 for nom, cause, lignes in resultats["errors"]:
     logger.warning(f"  {nom} : {cause} sur {len(lignes)} ligne(s)")
 
-# La table des types reconnus s'étoffe au fil des versions : DOUBLE
-# PRECISION, REAL, UUID, NVARCHAR et quelques autres rejoignent la liste
-# dans un prochain patch. NUMERIC et DECIMAL, eux, resteront volontairement
-# en texte, pour la raison de précision expliquée plus haut. Relancez ce
-# script après chaque montée de version pour voir ce qui a changé.
+# La table des types s'étoffe au fil des versions : elle est passée de 15 à
+# 31 entrées en 2026.10.13, couvrant désormais les types courants de
+# PostgreSQL, MySQL et SQL Server. Relancez ce script après chaque montée de
+# version : toute ligne "Type SQL non reconnu" restante désigne soit une
+# faute de frappe, soit un type encore absent.
 
 # Sans cols_def, le comportement est celui de pipeline.py : inférence sur le
 # premier batch, réinférence partielle des colonnes restées pl.Null sur les

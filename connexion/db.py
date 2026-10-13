@@ -50,11 +50,22 @@ source_pg.connect()
 # ouverte côté serveur jusqu'au timeout.
 source_pg.disconnect()
 
-# PIÈGE : disconnect() commence par appeler _check_connection(). Comme
-# connection vaut None après une première fermeture, un SECOND disconnect()
-# rouvre la connexion avant de la refermer aussitôt. Inoffensif mais
-# coûteux — un aller-retour réseau complet pour rien. Ne fermez qu'une fois,
-# ou testez `if source_pg.connection:` avant.
+# disconnect() est IDEMPOTENT : un second appel ne fait rien et ne lève pas.
+source_pg.disconnect()
+
+# C'est important parce qu'on appelle le plus souvent disconnect() dans un
+# `finally`. Si la connexion n'a jamais pu s'ouvrir, lever ici masquerait
+# l'erreur d'origine :
+#
+#   try:
+#       db.connect()      # échoue : base injoignable
+#   finally:
+#       db.disconnect()   # ne doit pas remplacer l'erreur par une autre
+#
+# Jusqu'à la 2026.10.13, disconnect() appelait _check_connection(), qui
+# ROUVRAIT la connexion avant de la fermer : un second appel ouvrait donc
+# une session pour la refermer aussitôt, soit un aller-retour réseau pour
+# rien.
 
 # ---------------------------------------------------------------------------
 # 3. SQL Server : la clé charset en plus

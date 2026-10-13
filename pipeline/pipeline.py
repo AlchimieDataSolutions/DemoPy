@@ -157,22 +157,24 @@ pipe = ads.Pipeline(
 # batch_size du pipeline ÉCRASE celui des objets db_source et db_destination :
 # inutile de le régler sur les connexions, c'est le pipeline qui décide.
 
+# Avec insert_method="bulk", le DataFrame circule tel quel jusqu'au
+# chargement en masse : aucune conversion en tuples intermédiaires. C'est ce
+# qui a multiplié le débit par 2,8 en 2026.10.13 — 4,05 s contre 1,45 s sur
+# 300 000 lignes et 30 colonnes. Le réglage "executemany", lui, convertit,
+# puisqu'il itère réellement les lignes en Python.
+
 # Fournir à la fois 'tableau' et 'db_source' lève un ValueError explicite
 # ("On veut tous le beurre et l'argent du beurre..."). N'en fournir aucun
 # lève "Aucune source de données choisie."
 #
 # Un tableau VIDE, lui, est une source valide : le pipeline ne transfère
-# rien et renvoie nb_lines_success = 0, sans erreur. Avant la 2026.10 il
-# tombait dans le même message que l'absence de source, ce qui envoyait
-# chercher un problème de configuration alors que la source était
-# simplement vide.
+# rien, renvoie nb_lines_success = 0, et le signale depuis la 2026.10.13 :
 #
-# Conséquence : un transfert de zéro ligne est SILENCIEUX. Si votre source
-# ne devrait jamais être vide, contrôlez-le vous-même en amont :
+#   WARNING - La source 'tableau' est vide : aucune ligne à transférer.
 #
-#   lignes = df.rows()
-#   if not lignes:
-#       logger.warning("Source vide, rien à transférer")
+# Avant la 2026.10 il tombait dans le même message que l'absence de source,
+# ce qui envoyait chercher un problème de configuration alors que la source
+# était simplement vide.
 
 # ---------------------------------------------------------------------------
 # 6. Exécution et lecture des résultats
