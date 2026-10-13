@@ -34,6 +34,19 @@ google_calendar = ads.GoogleCalendarConnector(
         # Optionnel, défaut "credentials.json". Vient de la console Google.
         "credentials_file": "demo_creds.json",
 
+        # PIÈGE sur ces deux chemins : ils sont utilisés TELS QUELS, donc
+        # relatifs au répertoire COURANT et non au script. Lancer
+        # `python connexion/googleCalendar.py` depuis la racine du dépôt
+        # cherche demo_creds.json à la RACINE, même si le fichier est posé
+        # à côté du script :
+        #
+        #   FileNotFoundError: [Errno 2] No such file or directory:
+        #   'demo_creds.json'
+        #
+        # Donnez un chemin absolu pour que l'emplacement ne dépende plus de
+        # l'endroit d'où vous lancez :
+        #   str(Path(__file__).parent / "demo_creds.json")
+
         # Optionnel, et c'est le paramètre le plus important à connaître.
         # Le défaut est calendar.readonly : en LECTURE SEULE. Toute
         # tentative d'écriture échouera en 403 tant que ce scope n'est pas
@@ -90,9 +103,9 @@ google_calendar.save_events_to_csv(
     csv_filename="events.csv",   # défaut : "calendar_events.csv"
 )
 
-# Le chemin est relatif au RÉPERTOIRE COURANT, pas au script : lancé depuis
-# la racine du dépôt, le fichier apparaît à la racine, pas dans connexion/.
-# Donnez un chemin absolu si l'emplacement importe.
+# Même remarque que pour credentials_file : le chemin est relatif au
+# RÉPERTOIRE COURANT, pas au script. Lancé depuis la racine du dépôt, le
+# fichier apparaît à la racine et non dans connexion/.
 logger.info(f"CSV écrit dans : {os.path.abspath('events.csv')}")
 
 # Enchaîner les deux appels en une ligne, comme

@@ -34,7 +34,32 @@ dest_pg.connect()
 
 table = "upsert_test"
 cols = ["id_int", "name_varchar", "count_int"]
-cols_def = ["INTEGER PRIMARY KEY", "VARCHAR(50)", "INTEGER"]
+# cols_def ne contient que des TYPES, jamais de contraintes. La liste sert
+# à deux usages : composer le CREATE TABLE de create_destination_table, où
+# "INTEGER PRIMARY KEY" passerait, ET déduire le schéma Polars, où seule la
+# partie type est comprise. Une contrainte y fait retomber la colonne en
+# Utf8, avec un simple log DEBUG :
+#
+#   DEBUG - Type SQL non reconnu 'INTEGER PRIMARY KEY', fallback en Utf8
+#
+# La clé primaire se déclare donc dans le CREATE TABLE ci-dessous, pas ici.
+cols_def = ["INTEGER", "VARCHAR(50)", "INTEGER"]
+
+
+def resumer(resultats: dict, libelle: str) -> None:
+    """
+    Journalise un résultat de run() sans déverser les lignes rejetées.
+
+    La clé 'errors' contient les DONNÉES en échec, pas seulement la cause :
+    la journaliser entière produirait des milliers de lignes.
+    """
+    logger.info(
+        f"{libelle} : {resultats['nb_lines_success']} ligne(s) traitée(s), "
+        f"{resultats['nb_lines_error']} en erreur",
+    )
+    for nom, cause, lignes in resultats["errors"]:
+        logger.warning(f"  {nom} : {cause} sur {len(lignes)} ligne(s)")
+
 
 # ---------------------------------------------------------------------------
 # 1. La table cible doit avoir une contrainte d'unicité
@@ -80,7 +105,7 @@ pipe = ads.Pipeline(
     },
     logger=logger,
 )
-print(f"Insertion initiale : {pipe.run()}")
+resumer(pipe.run(), "insertion initiale")
 
 # ---------------------------------------------------------------------------
 # 3. Second passage : upsert
@@ -100,7 +125,7 @@ pipe_upsert = ads.Pipeline(
     },
     logger=logger,
 )
-print(f"Upsert : {pipe_upsert.run()}")
+resumer(pipe_upsert.run(), "upsert bulk")
 
 # Vérification : 150 lignes, dont 100 modifiées.
 total = dest_pg.sql_scalaire(query=f"SELECT COUNT(*) FROM {table}")
@@ -132,7 +157,7 @@ pipe_many = ads.Pipeline(
     },
     logger=logger,
 )
-print(f"Upsert executemany : {pipe_many.run()}")
+resumer(pipe_many.run(), "upsert executemany")
 
 # Une valeur inconnue d'operation_type ou d'insert_method lève un
 # NotImplementedError explicite, propagé par run() — contrairement aux

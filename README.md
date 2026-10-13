@@ -7,7 +7,7 @@ fonctionnalité, commenté ligne à ligne, avec les subtilités et les pièges.
 Chaque script est autonome et exécutable seul. Les commentaires font partie de
 la démonstration : lisez-les autant que vous exécutez le code.
 
-- **Version de la librairie ciblée** : `2026.09.02`
+- **Version de la librairie ciblée** : `2026.10.2.1`
 - **Python** : `>= 3.10`
 
 ## Table des matières
@@ -79,7 +79,7 @@ avertissement, et rien n'est installé.
 
 ```
 $ pip install "adstoolbox[pymssql]"
-WARNING: adstoolbox 2026.9.2 does not provide the extra 'pymssql'
+WARNING: adstoolbox 2026.10.2.1 does not provide the extra 'pymssql'
 ```
 
 Le nom correct est `mssql`. Les neuf extras valides sont ceux du tableau
@@ -95,16 +95,16 @@ extra tournent avec `pip install adstoolbox` nu.
 
 | Script | Extra | Sujet |
 |---|---|---|
-| `installation/extras.py` | — | Cœur, extras, chargement paresseux, messages d'erreur, cas Polars/AVX2 |
+| `installation/extras.py` | — | Cœur, extras, chargement paresseux, messages d'erreur, runtime Polars, prérequis `pgcrypto` |
 
 ### Logs, chronométrage, retry, environnement
 
 | Script | Extra | Sujet |
 |---|---|---|
-| `logger/logger.py` | `pgsql` | Niveaux, `insert=False`, insertion en base, `disable`/`enable`, `disabled()`, `log_close`, `job_key` |
+| `logger/logger.py` | `pgsql` | Configuration par dictionnaires, nommage du fichier par chaîne d'appel, rotation calendaire et purge, niveaux, `insert=False`, `disabled()`, `log_close` |
 | `logger/timer.py` | `pgsql` | `@timer`, `set_timer`/`get_timer`, `set_timezone`, `now`, perte d'introspection |
 | `logger/retry.py` | — | `retry_on_failure` : reconnexion, `retryable_exceptions`, `retry_count=0` |
-| `logger/env.py` | — | `Env` : recherche automatique du `.env`, les trois façons de lire une variable |
+| `logger/env.py` | — | `Env` : recherche automatique du `.env`, les trois façons de lire une variable, et `bind()` pour une configuration typée |
 
 ### Connexions
 
@@ -119,8 +119,8 @@ extra tournent avec `pip install adstoolbox` nu.
 | Script | Extra | Sujet |
 |---|---|---|
 | `operations/sql_simple.py` | `pgsql` | `sql_exec`, `sql_scalaire`, `find_text_anywhere` |
-| `operations/read.py` | `pgsql` | `sql_query`, lecture par batchs, `return_columns` |
-| `operations/insert.py` | `pgsql` | Les six méthodes : `insert`, `insert_many`, `insert_bulk` et les trois `upsert` |
+| `operations/read.py` | `pgsql` | `sql_query`, lecture par batchs, `return_columns`, colonnes entièrement nulles typées `Null` |
+| `operations/insert.py` | `pgsql` | Les six méthodes : `insert`, `insert_many`, `insert_bulk` et les trois `upsert`, avec le repli d'`upsert_bulk` sur une table ordinaire |
 | `operations/polymorphisme.py` | `mssql`, `mysql`, `pgsql` | `DataFactory` comme interface commune, et ce qui reste spécifique |
 | `operations/compare.py` | `mysql`, `pgsql` | `DataComparator`, écarts de représentation entre backends |
 
@@ -130,10 +130,10 @@ extra tournent avec `pip install adstoolbox` nu.
 |---|---|---|
 | `pipeline/pipeline.py` | `mysql`, `pgsql` | **Script de référence** : configuration complète, résultats de `run()` |
 | `pipeline/pipeline_sources.py` | `pgsql` | Sources non-SQL : tableau en mémoire, API REST |
-| `pipeline/pipeline_upsert.py` | `pgsql` | `operation_type='upsert'`, `conflict_cols`, `insert_method` |
+| `pipeline/pipeline_upsert.py` | `pgsql` | `operation_type='upsert'`, `conflict_cols`, `insert_method`, types seuls dans `cols_def` |
 | `pipeline/pipeline_hash.py` | `mysql`, `pgsql` | Déduplication par empreinte de ligne |
-| `pipeline/pipeline_schema.py` | `mysql`, `pgsql` | `cols_def`, `create_destination_table`, `sql_defs_to_polars_schema` |
-| `pipeline/cdc.py` | `cdc` | `ChangeDataCapture`, modes `append`/`scd1`/`scd2`/`scd4` |
+| `pipeline/pipeline_schema.py` | `mysql`, `pgsql` | `cols_def`, `create_destination_table`, `sql_defs_to_polars_schema`, repli en `Utf8` des types non reconnus |
+| `pipeline/cdc.py` | `cdc`, `pgsql` | `ChangeDataCapture` exécutable : deux synchronisations scd2 successives sur PostgreSQL, historisation, prérequis `pgcrypto` |
 
 Les configurations CDC complètes sont dans `pipeline/cdc_use.md`, à côté du
 script.
@@ -184,20 +184,14 @@ MSSQL_DWH_PWD=
 MSSQL_DWH_PORT=1433
 MSSQL_DWH_HOST=
 
-# CDC (pipeline/cdc.py) — alimente la chaîne SQLAlchemy vers SQL Server
-AFT_DB=
-AFT_USER=
-AFT_PWD=
-AFT_PORT=1433
-AFT_HOST=
-
 # Odoo (connexion/odoo.py)
 ODOO_URL=
 ODOO_DB=
 ODOO_USER=
 ODOO_PWD=
 
-# API (pipeline/pipeline_sources.py via get_api_data.py)
+# API (pipeline/pipeline_sources.py via get_api_data.py) — FACULTATIF :
+# sans ces variables, le script poursuit sur une charge simulée.
 API_DOMAIN=
 API_USER=
 API_PASSWORD=
@@ -219,6 +213,9 @@ MAIL_LOGIN=
 MAIL_PWD=
 ```
 
+`pipeline/cdc.py` construit sa chaîne SQLAlchemy depuis les variables
+`PG_DWH_*` : il n'a pas de configuration propre.
+
 `connexion/googleCalendar.py` ne passe pas par le `.env` : il attend un
 fichier `credentials.json` téléchargé depuis la console Google, et crée
 lui-même son `token.json` à la première connexion.
@@ -230,6 +227,14 @@ Lancez **`pipeline/pipeline.py` en premier** : c'est lui qui la crée et la
 remplit dans les deux bases. `operations/insert.py`, `operations/read.py` et
 `operations/compare.py` la supposent existante — `operations/insert.py`
 commence même par un `TRUNCATE`.
+
+`pipeline/cdc.py` tire ses données d'`insert_test` : lancez `pipeline/pipeline.py`
+avant lui. Il gère ensuite ses propres tables et reste rejouable.
+
+`operations/compare.py` compare les deux bases et suppose donc qu'elles
+contiennent la même chose. Or `pipeline/pipeline.py` est le SEUL script qui
+alimente les deux : relancez-le juste avant de comparer, sinon l'écart
+portera sur le contenu et non sur la représentation.
 
 `pipeline/pipeline_schema.py` et `pipeline/pipeline_hash.py` appellent
 `create_destination_table(drop=True)` sur cette même table : ils la

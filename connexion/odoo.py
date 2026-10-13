@@ -52,7 +52,13 @@ odoo.connect()
 # car les noms de champs Odoo ne correspondent pas aux libellés de
 # l'interface web.
 fields = odoo.desc(table="account.account")
-logger.info(f"Descriptions: {fields}")
+
+# Le retour est volumineux : plusieurs centaines de champs sur un modèle
+# standard, chacun avec son libellé, son type et parfois son aide. Le
+# journaliser entier rend la sortie illisible — on échantillonne.
+logger.info(f"{len(fields)} champ(s) décrits sur account.account")
+for nom, meta in list(fields.items())[:5]:
+    logger.info(f"  {nom} : {meta['type']} — {meta['string']}")
 
 # ---------------------------------------------------------------------------
 # 4. get : lire des enregistrements
@@ -87,19 +93,44 @@ logger.info(f"{len(actifs)} employé(s) actif(s)")
 # sql_query des classes Db*. Pour alimenter un Pipeline depuis Odoo, il faut
 # donc convertir en listes de valeurs dans l'ordre des colonnes cibles.
 
+# PIÈGE : un champ vide ne vaut ni None ni "" mais False. C'est la
+# convention XML-RPC d'Odoo, et elle traverse telle quelle :
+#
+#   {"id": 25, "name": "Matthieu Vannin", "work_email": False}
+#
+# Un `email.lower()` sur une telle valeur lève AttributeError, et insérer ce
+# False dans une colonne texte donne "false" ou 0 selon le backend.
+# Normalisez avant de transmettre :
+for ligne in values:
+    if ligne.get("work_email") is False:
+        ligne["work_email"] = None
+
 # ---------------------------------------------------------------------------
 # 5. put : créer des enregistrements
 # ---------------------------------------------------------------------------
-# put renvoie la liste des IDS créés par Odoo, à conserver si vous devez
-# rapprocher les lignes insérées de votre source.
-ids = odoo.put(
-    table="MaTable",
-    lines=[
-        ("1", "employe1", "data engineer"),
-        ("2", "employe2", "data analyst"),
-    ],
-)
-logger.info(f"Identifiants créés : {ids}")
+# Chaque élément de `lines` est transmis tel quel à la méthode `create`
+# d'Odoo, qui attend un DICTIONNAIRE {champ: valeur}. Des tuples ou des
+# listes de valeurs ne fonctionnent pas : les noms de champs sont
+# obligatoires, Odoo n'ayant pas d'ordre de colonnes.
+#
+# put renvoie la liste des IDS créés, à conserver si vous devez rapprocher
+# les lignes insérées de votre source.
+#
+# Cet appel est commenté : il écrirait réellement dans votre instance Odoo.
+# Décommentez-le en remplaçant le modèle et les champs par les vôtres, après
+# un desc() pour connaître les noms exacts.
+#
+# ids = odoo.put(
+#     table="hr.employee",
+#     lines=[
+#         {"name": "Employé de test", "work_email": "test@example.com"},
+#     ],
+# )
+# logger.info(f"Identifiants créés : {ids}")
+
+# Un modèle inexistant échoue côté serveur, pas à l'appel :
+#   xmlrpc.client.Fault: <Fault 2: "Object MaTable doesn't exist">
+# L'erreur est journalisée en ERROR puis propagée.
 
 # Attention : put crée, il ne met pas à jour. Il n'y a pas d'upsert côté
 # OdooConnector pour le moment. Pour modifier un enregistrement existant,

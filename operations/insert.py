@@ -68,7 +68,12 @@ logger.info(f"insert -> statut={statut}, erreur={erreur}")
 # ---------------------------------------------------------------------------
 # `rows` est une liste de listes. Passe par l'executemany du driver :
 # une requête paramétrée, réexécutée pour chaque ligne.
-print(source.insert_many(schema="", table=table, cols=cols, rows=data[1:1_000]))
+statut, erreurs, rejets = source.insert_many(
+    schema="", table=table, cols=cols, rows=data[1:1_001])
+# On n'affiche PAS `rejets` : c'est la liste des lignes en échec, qui peut
+# compter des milliers d'entrées et noyer la sortie. Elle est là pour être
+# traitée, pas lue.
+logger.info(f"insert_many -> {statut}, {len(rejets)} lot(s) rejeté(s)")
 
 # ---------------------------------------------------------------------------
 # 3. insert_bulk : plusieurs lignes en masse
@@ -79,7 +84,9 @@ print(source.insert_many(schema="", table=table, cols=cols, rows=data[1:1_000]))
 #
 # Contrepartie : le contrôle des erreurs est moins fin. Un lot en échec est
 # rejeté en bloc, là où insert_many peut isoler la ligne fautive.
-print(source.insert_bulk(schema="", table=table, cols=cols, rows=data[1_001:]))
+statut, erreurs, rejets = source.insert_bulk(
+    schema="", table=table, cols=cols, rows=data[1_001:])
+logger.info(f"insert_bulk -> {statut}, {len(rejets)} lot(s) rejeté(s)")
 
 # ---------------------------------------------------------------------------
 # 4. La contrainte d'unicité, prérequis de l'upsert
@@ -112,7 +119,7 @@ source.upsert_many(
     schema="",
     table=table,
     cols=cols,
-    rows=data[1:1_000],
+    rows=data[1:1_001],
     conflict_cols=conflict_cols,
 )
 
@@ -125,6 +132,34 @@ source.upsert_bulk(
     rows=data[1_001:],
     conflict_cols=conflict_cols,
 )
+
+# PIÈGE : toutes les bases n'accordent pas le droit de créer des tables
+# temporaires. Le cas s'est présenté en production sur une base PostgreSQL :
+#
+#   permission denied to create temporary tables in database "..."
+#
+# Depuis la 2026.10, upsert_bulk ne s'arrête plus là. Il bascule sur une
+# table de travail ORDINAIRE, au nom unique, supprimée en fin de traitement,
+# et vous prévient :
+#
+#   WARNING - Création d'une table temporaire refusée (...)
+#   WARNING - Repli sur une table ORDINAIRE cible_staging_3f2326ec, supprimée
+#             en fin de traitement. Accordez le droit de créer des tables
+#             temporaires pour l'éviter.
+#
+# Le chargement en masse est conservé : repasser par upsert_many serait hors
+# de portée sur du volume. Mesuré sur 20 000 lignes, les deux chemins donnent
+# le même résultat.
+#
+# Le nom porte un suffixe aléatoire parce qu'une table ordinaire est visible
+# de tous : elle ne doit écraser aucune table réelle ni gêner un autre
+# traitement qui tournerait en même temps.
+#
+# SQL Server n'est pas concerné : sa table de travail est déjà persistante.
+#
+# Si la suppression finale n'a pas lieu — processus tué entre-temps — la
+# table survit, contrairement à une temporaire qui disparaît avec la session.
+# Son nom en `<table>_staging_<suffixe>` la rend reconnaissable.
 
 # ---------------------------------------------------------------------------
 # 6. Choisir

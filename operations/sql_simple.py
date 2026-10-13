@@ -57,17 +57,17 @@ INSERT INTO demo_insert (tenantname, fichier) VALUES ('T2', 'b.csv');
 # ===========================================================================
 # Renvoie la PREMIÈRE colonne de la PREMIÈRE ligne. Idéal pour un COUNT, un
 # MAX, un NOW() ou un test d'existence.
-print(source.sql_scalaire(query="SELECT NOW()"))
-print(source.sql_scalaire(query="SELECT COUNT(*) FROM demo_insert;"))
+logger.info(f"NOW() -> {source.sql_scalaire(query='SELECT NOW()')}")
+logger.info(f"COUNT(*) -> {source.sql_scalaire(query='SELECT COUNT(*) FROM demo_insert;')}")
 
 # ATTENTION : plusieurs champs demandés, seul le premier revient. Le second
 # est silencieusement perdu — aucun avertissement.
-print(source.sql_scalaire(query="SELECT 1, NOW()"))
+logger.info(f"SELECT 1, NOW() -> {source.sql_scalaire(query='SELECT 1, NOW()')}  <- NOW() est perdu")
 
 # Sur un résultat vide, sql_scalaire renvoie None. Un None peut donc
 # signifier « aucune ligne » comme « la valeur trouvée est NULL » : les deux
 # cas sont indiscernables. Si la distinction compte, passez par sql_query.
-print(source.sql_scalaire(query="SELECT tenantname FROM demo_insert WHERE 1=0"))
+logger.info(f"résultat vide -> {source.sql_scalaire(query='SELECT tenantname FROM demo_insert WHERE 1=0')}")
 
 # ===========================================================================
 # 3. find_text_anywhere : chercher une valeur partout
@@ -85,11 +85,15 @@ results = source.find_text_anywhere(
 
 # Le retour est une liste de dictionnaires à cinq clés.
 for result in results:
-    print(
+    logger.info(
         f"trouvé {result['count']} fois dans "
         f"{result['schema']}.{result['table']}.{result['column']}"
         f" — requête : {result['query']}",
     )
+
+# Tout passe par le logger, y compris les valeurs : les print() iraient sur
+# stdout alors que les logs partent sur stderr, et les deux flux
+# s'entrelaceraient de façon imprévisible à l'affichage.
 
 # La clé 'query' contient une requête prête à l'emploi pour retrouver les
 # lignes concernées : c'est le principal intérêt du retour.
@@ -99,12 +103,17 @@ for result in results:
 resultats_cibles = source.find_text_anywhere(
     search="User1%",
     schema="public",
-    table="demo_insert",
+    table="insert_test",   # la table où l'on sait que la valeur se trouve
     log_every=10,
-    include_views=True,   # inclut aussi les vues
+    include_views=True,    # inclut aussi les vues
 )
 
 logger.info(f"{len(resultats_cibles)} correspondance(s) sur la cible restreinte")
+
+# Comparez les deux lignes "Analyse de N colonne(s)" dans les logs : la
+# recherche large en inspecte plusieurs dizaines réparties sur toutes les
+# tables, la recherche ciblée seulement celles de insert_test. Le résultat
+# est le même, le coût n'a rien à voir — et l'écart grandit avec la base.
 
 # Seules les colonnes de type texte sont inspectées : chercher un nombre ou
 # une date ne donnera rien, même si la valeur existe dans une colonne

@@ -36,6 +36,32 @@ contrat = sorted(
 logger.info(f"Méthodes du contrat DataFactory : {', '.join(contrat)}")
 
 # ---------------------------------------------------------------------------
+# 2 bis. Abstrait ou pas : ce que la liste des méthodes abstraites raconte
+# ---------------------------------------------------------------------------
+# Le message de l'étape 1 nomme les méthodes qu'une sous-classe DOIT fournir.
+# Elles sont toutes privées sauf connect : le contrat public est entièrement
+# implémenté par DataFactory, qui délègue aux quelques morceaux de SQL
+# propres à chaque backend.
+logger.info(f"Méthodes à fournir : {', '.join(sorted(ads.DataFactory.__abstractmethods__))}")
+
+# _create_staging_table n'y figure PAS, et c'est délibéré. Elle crée la table
+# de travail ORDINAIRE sur laquelle upsert_bulk bascule quand la base refuse
+# les tables temporaires. PostgreSQL et MySQL la surchargent, SQL Server non :
+# sa table de travail est déjà persistante, il n'a rien à replier.
+#
+# La rendre abstraite aurait rendu DbMssql non instanciable pour une méthode
+# dont il n'a pas l'usage. Elle lève donc NotImplementedError par défaut, et
+# upsert_bulk transforme cela en message clair.
+for cls in (ads.DbPgsql, ads.DbMysql, ads.DbMssql):
+    surcharge = "_create_staging_table" in cls.__dict__
+    logger.info(f"  {cls.__name__} surcharge _create_staging_table : {surcharge}")
+
+# C'est le compromis habituel : une méthode abstraite impose le même contrat
+# à tous, au prix d'implémentations vides là où elle n'a pas de sens. Une
+# méthode concrète qui lève laisse les backends concernés l'ignorer, au prix
+# d'une erreur à l'exécution plutôt qu'à l'instanciation.
+
+# ---------------------------------------------------------------------------
 # 3. Écrire une fonction qui accepte n'importe quel backend
 # ---------------------------------------------------------------------------
 # Typez sur DataFactory, jamais sur DbPgsql : la fonction devient réutilisable
@@ -100,6 +126,9 @@ bases = {
 #   - SQL Server exige CAST(uuid_col AS NVARCHAR(36)) pour les UUID
 #   - `CREATE TABLE IF NOT EXISTS` n'existe pas sur SQL Server, qui demande
 #     IF OBJECT_ID(...) IS NULL
+#   - tables temporaires : Postgres et MySQL exigent un droit dédié, que
+#     certaines bases n'accordent pas. upsert_bulk bascule alors sur une
+#     table ordinaire — voir operations/insert.py, section 5.
 #
 # Voir operations/compare.py pour un exemple d'adaptation des requêtes entre
 # Postgres et MySQL sur des données identiques.

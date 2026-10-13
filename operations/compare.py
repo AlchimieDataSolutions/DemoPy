@@ -3,8 +3,27 @@
 DataComparator : comparer deux sources batch par batch.
 
 PRÉREQUIS : les deux bases doivent contenir la table insert_test avec les
-mêmes données. Lancez d'abord `python pipeline/pipeline.py`, qui remplit
-MySQL puis recopie vers PostgreSQL.
+MÊMES données. Lancez `python pipeline/pipeline.py` JUSTE AVANT : c'est le
+seul script qui alimente les deux bases.
+
+Plusieurs autres scripts écrivent dans insert_test côté PostgreSQL
+uniquement, et désynchronisent donc les deux côtés :
+
+  operations/insert.py        vide la table puis la remplit (PostgreSQL)
+  operations/polymorphisme.py écrit selon le backend choisi
+  pipeline/pipeline_upsert.py modifie des lignes (PostgreSQL)
+  pipeline/pipeline_schema.py recrée la table avec son propre cols_def
+  pipeline/pipeline_hash.py   idem, avec une colonne de hash en plus
+
+Si l'un d'eux est passé entre-temps, la comparaison échouera sur un écart
+de CONTENU et non de représentation. La trace ressemble alors à ceci, deux
+plages d'identifiants disjointes :
+
+  Les données diffèrent dans le batch #1 :
+    [left]  : 1002, 1003, ... 11001
+    [right] :    1,    2, ... 10000
+
+Dans ce cas, relancez pipeline/pipeline.py avant de comparer.
 
 L'ancienne version de ce script importait pipeline.pipeline pour provoquer
 ce remplissage. C'était fragile : l'import exécutait tout le script en

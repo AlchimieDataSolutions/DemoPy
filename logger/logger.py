@@ -8,6 +8,7 @@ L'extra pgsql n'est requis que pour la partie insertion en base
 import os
 
 import adsToolBox as ads
+from adsToolBox import logger as ads_logger
 
 script_name = os.path.basename(__file__)
 
@@ -17,21 +18,83 @@ script_name = os.path.basename(__file__)
 # Les niveaux sont des int : 10 DEBUG, 20 INFO, 30 WARNING, 40 ERROR,
 # 50 CRITICAL. Ils servent à DEUX filtrages distincts, gérés séparément :
 # l'affichage console/fichier, et l'insertion en base.
-# Le fichier de log tourne quotidiennement et garde 10 jours d'historique.
+#
+# Deux arguments positionnels, puis trois dictionnaires de configuration. Ces
+# dictionnaires remplacent les six arguments d'avant la 2026.10 :
+# enable_console, enable_file, timestamp_display, name_display,
+# table_log_name et table_log_details_name.
 logger = ads.Logger(
     log_level=ads.Logger.DEBUG,                  # seuil initial pour les deux filtrages
     logger_name=f"adsLogger - {script_name}",    # important en contexte multi-thread
-    table_log_name="LOGS",                       # table de log principale
-    table_log_details_name="LOGS_details",       # table de détails, une ligne par message
-    timestamp_display=True,                      # affiche l'horodatage
-    name_display=True,                           # affiche le nom du logger
-    enable_console=True,                         # handler console
-    enable_file=True,                            # handler fichier (log.txt)
+    console_config={
+        "enabled": True,                         # handler console
+        "timestamp": True,                       # affiche l'horodatage
+        "name": True,                            # affiche le nom du logger
+    },
+    file_config={
+        "enabled": True,                         # handler fichier
+        "filename": None,                        # None => nom déduit de la chaîne d'appel
+        "when": "midnight",                      # rotation calendaire
+        "interval": 1,
+        "retention_days": 10,                    # purge par ancienneté
+        "backup_count": 0,                       # utilisé si retention_days vaut None
+    },
+    tables_config={
+        "logs": "LOGS",                          # table de log principale
+        "details": "LOGS_details",               # une ligne par message
+    },
 )
 
-# enable_console=False et enable_file=False donnent un logger muet côté
-# affichage mais qui continue d'insérer en base : utile pour un job planifié
-# dont on ne veut que la trace en table.
+# Toutes les clés sont optionnelles : ads.Logger(ads.Logger.DEBUG, "monJob")
+# suffit et donne exactement les valeurs ci-dessus.
+#
+# PIÈGE : un dictionnaire ne protège pas des fautes de frappe comme le ferait
+# un argument nommé. Une clé inconnue est donc refusée explicitement :
+#
+#   ads.Logger(file_config={"filenam": "x.log"})
+#   -> ValueError: file_config : clé(s) inconnue(s) ['filenam'].
+#      Clés admises : ['backup_count', 'enabled', 'filename', 'interval',
+#                      'retention_days', 'when'].
+
+# console_config={"enabled": False} et file_config={"enabled": False} donnent
+# un logger muet côté affichage mais qui continue d'insérer en base : utile
+# pour un job planifié dont on ne veut que la trace en table.
+
+# ---------------------------------------------------------------------------
+# 1 bis. Le fichier de log : un par script, archivé par jour
+# ---------------------------------------------------------------------------
+# Sans "filename", le nom est déduit de la CHAÎNE D'APPEL : un main.py qui
+# appelle un sample.py porteur du logger écrit dans main-sample-log.txt.
+# Ce script, lancé seul, écrit donc dans logger-log.txt.
+#
+# Avant la 2026.10, tous les jobs partageaient un log.txt unique créé dans le
+# répertoire COURANT : deux scripts lancés depuis le même dossier
+# s'archivaient et se purgeaient mutuellement.
+# ads_logger est importé en tête du script : avec le chargement paresseux,
+# ads.logger lève AttributeError tant que le sous-module n'a pas été importé
+# explicitement. Seuls les symboles publics (ads.Logger, ads.DbPgsql...) sont
+# résolus à la demande.
+logger.info(
+    message=f"Fichier de log de ce script : {ads_logger.nom_fichier_par_defaut()}",
+    insert=False,
+)
+
+# Rotation : si le fichier contient des logs d'un AUTRE jour, il est archivé
+# sous <nom>.<date des anciens logs> et un fichier vide repart. Les archives
+# de plus de retention_days jours sont supprimées, dès l'ouverture du logger
+# et pas seulement lors d'une rotation.
+#
+# L'échéance est ancrée sur le PREMIER enregistrement du fichier, et non sur
+# sa dernière écriture. C'est ce qui rend la rotation fiable pour un script
+# relancé par un ordonnanceur : avant, l'échéance était repoussée à chaque
+# exécution et un job horaire ne tournait jamais.
+#
+# Conséquence : console_config ne règle QUE la console. Le fichier conserve
+# toujours son horodatage, puisque c'est lui qui porte cette ancre.
+
+# Pour écrire ailleurs qu'à côté du répertoire courant, donnez un chemin :
+# le dossier parent est créé s'il n'existe pas.
+#   file_config={"filename": "jobs/2026/etl.log", "retention_days": 30}
 
 logger.info("Début de la démonstration.")
 

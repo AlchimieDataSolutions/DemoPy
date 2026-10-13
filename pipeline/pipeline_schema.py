@@ -67,7 +67,9 @@ CREATE TABLE {table} (
     created_date DATE, created_at DATETIME, updated_at DATETIME, event_time TIME,
     is_active BOOLEAN, uuid_key CHAR(36)
 );""")
-print(source_mysql.insert_bulk(schema="", table=table, cols=cols, rows=utils.data))
+statut, _, rejets = source_mysql.insert_bulk(
+    schema="", table=table, cols=cols, rows=utils.data)
+logger.info(f"alimentation MySQL -> {statut}, {len(rejets)} lot(s) rejeté(s)")
 
 query = f"""
 SELECT id_int, name_varchar, code_char, description_text, count_int, id_bigint,
@@ -122,12 +124,33 @@ schema = pipe.sql_defs_to_polars_schema(cols=cols, cols_def=cols_def)
 for nom, dtype in schema.items():
     logger.info(message=f"  {nom:20s} -> {dtype}")
 
-# Deux comportements à connaître.
+# Quatre comportements à connaître.
 #
-# a) Un type SQL non reconnu ne provoque PAS d'erreur : il retombe sur Utf8
-#    avec un log en DEBUG ("Type SQL non reconnu ... fallback en Utf8").
-#    Une faute de frappe dans cols_def donne donc une colonne texte au lieu
-#    d'un entier, silencieusement pour qui ne lit pas les logs DEBUG.
+# a) cols_def ne GARANTIT pas un type Polars précis. Un type SQL absent de
+#    la table de correspondance retombe sur Utf8, avec un simple log DEBUG.
+#    Et la table ne couvre pas tout : lancez ce script et regardez les
+#    lignes "Type SQL non reconnu". Avec les cols_def ci-dessus, cinq
+#    colonnes sur seize partent en texte :
+#
+#      NUMERIC(18,6), NUMERIC(10,2), DOUBLE PRECISION, REAL, UUID
+#
+#    Ce ne sont pas des fautes : ce sont des types PostgreSQL parfaitement
+#    valides, simplement absents de la table. Le transfert fonctionne —
+#    PostgreSQL reconvertit le texte à l'insertion — mais le schéma Polars
+#    n'est pas celui qu'on croit.
+#
+#    Pour les décimaux exacts, ce repli est d'ailleurs SOUHAITABLE : un
+#    Float64 perd la précision au-delà d'une quinzaine de chiffres
+#    significatifs, et un aller-retour sur NUMERIC(18,6) transforme
+#    123456789012.345678 en 123456789012.345670. Le texte, lui, préserve la
+#    valeur.
+#
+#    Conséquence pratique : passez les logs en DEBUG au moins une fois sur
+#    un nouveau transfert, pour savoir quelles colonnes sont concernées.
+#
+# a bis) Une FAUTE DE FRAPPE produit exactement le même repli, donc le même
+#    silence. "NUMERICC" ci-dessous donne une colonne texte sans que rien
+#    ne signale l'erreur ailleurs que dans les logs DEBUG.
 schema_faute = pipe.sql_defs_to_polars_schema(
     cols=["montant"],
     cols_def=["NUMERICC(18,2)"],   # faute volontaire
@@ -159,9 +182,39 @@ logger.info(message=str(pipe.sql_defs_to_polars_schema(
 # 3. Exécution
 # ---------------------------------------------------------------------------
 # Avec cols_def, Polars n'infère plus : il applique le schéma dès le premier
-# batch. Gain de temps sur les gros volumes, et surtout typage DÉTERMINISTE
-# — l'inférence peut varier selon le contenu du premier batch.
-print(pipe.run())
+# batch. Comparez les logs de ce script avec ceux de pipeline.py — la ligne
+# "DEBUG - Inférence des types sur le premier batch." n'apparaît qu'ici.
+#
+# Le gain n'est PAS celui qu'on imagine. L'inférence n'a lieu qu'une fois,
+# sur le premier lot, pas à chaque lot : son coût est donc borné et négligeable
+# face aux entrées-sorties. Mesuré sur ce jeu de 50 000 lignes, en alternant
+# l'ordre des essais pour écarter l'effet d'échauffement :
+#
+#   avec cols_def   1.19s   1.22s
+#   sans cols_def   1.31s   1.22s
+#
+# Aucun écart significatif. Le vrai intérêt de cols_def est ailleurs :
+#
+#   - typage DÉTERMINISTE : l'inférence dépend du contenu du premier lot,
+#     donc du tri, du filtre, de la volumétrie. Deux exécutions sur des
+#     données différentes peuvent produire deux schémas différents.
+#   - protection contre les colonnes entièrement nulles, qui restent pl.Null
+#     et font échouer l'insertion (voir la fin de ce script).
+#   - conversion explicite plutôt que devinée, donc des surprises qui
+#     apparaissent à la lecture du code et non en production.
+resultats = pipe.run()
+# On ne journalise PAS le dictionnaire entier : sa clé 'errors' contient les
+# lignes rejetées, donc potentiellement des milliers d'entrées.
+logger.info(f"{resultats['nb_lines_success']} ligne(s) insérée(s), "
+            f"{resultats['nb_lines_error']} en erreur")
+for nom, cause, lignes in resultats["errors"]:
+    logger.warning(f"  {nom} : {cause} sur {len(lignes)} ligne(s)")
+
+# La table des types reconnus s'étoffe au fil des versions : DOUBLE
+# PRECISION, REAL, UUID, NVARCHAR et quelques autres rejoignent la liste
+# dans un prochain patch. NUMERIC et DECIMAL, eux, resteront volontairement
+# en texte, pour la raison de précision expliquée plus haut. Relancez ce
+# script après chaque montée de version pour voir ce qui a changé.
 
 # Sans cols_def, le comportement est celui de pipeline.py : inférence sur le
 # premier batch, réinférence partielle des colonnes restées pl.Null sur les

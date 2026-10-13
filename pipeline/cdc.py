@@ -24,6 +24,23 @@ env = ads.Env(logger)
 #
 # Le driver doit donc être installé en plus : mssql+pymssql exige l'extra
 # mssql, postgresql+psycopg2 l'extra pgsql, mysql+pymysql l'extra mysql.
+# Depuis la 2026.10, un driver manquant est signalé clairement plutôt que par
+# un ModuleNotFoundError nu, le chargement paresseux ne voyant pas ce cas
+# puisque c'est SQLAlchemy qui importe le driver :
+#
+#   ImportError: La chaîne de connexion utilise le pilote 'mssql+pymssql',
+#   dont le driver Python 'pymssql' n'est pas installé. Installez-le avec :
+#   pip install "adstoolbox[mssql]" (l'extra "cdc" n'apporte que SQLAlchemy).
+#
+# PRÉREQUIS CÔTÉ BASE, sur PostgreSQL uniquement : l'empreinte de clé passe
+# par digest(), fourni par l'extension pgcrypto et absent d'une installation
+# nue. ChangeDataCapture le vérifie au démarrage et indique quoi faire :
+#
+#   CREATE EXTENSION pgcrypto;
+#
+# L'empreinte de ligne, elle, utilise md5() qui est natif. SQL Server n'est
+# pas concerné, il passe par HASHBYTES. Sur une base managée, l'activation
+# demande souvent des droits d'administration : à anticiper.
 connection_string = f"mssql+pymssql://{env.AFT_USER}:{env.AFT_PWD}@{env.AFT_HOST}:{env.AFT_PORT}/{env.AFT_DB}"
 config_json = """{
     "staging_area" : {

@@ -101,18 +101,41 @@ for m in manquants:
 # exemple `# adstoolbox[pgsql]`. Le tableau du README fait la synthèse.
 
 # ---------------------------------------------------------------------------
-# 6. Cas particulier : processeur sans AVX2
+# 6. Cas particulier : machine au jeu d'instructions ancien
 # ---------------------------------------------------------------------------
-# adsToolBox dépend de `polars`, le build standard, qui exige AVX2. Sur une
-# machine plus ancienne, il faut basculer APRÈS l'installation :
+# Polars ne contient pas son moteur de calcul : il le charge depuis un paquet
+# de runtime séparé, compilé pour un jeu d'instructions récent. Sur une
+# machine qui ne le gère pas, l'import avertit puis le processus plante.
+#
+# La parade est d'installer le runtime de compatibilité :
 #
 #   pip install "adstoolbox[pgsql]"
-#   pip install --force-reinstall --no-deps polars-lts-cpu
+#   pip install "polars[rtcompat]"
 #
-# --force-reinstall est indispensable : les deux distributions fournissent le
-# même module `polars` sans se déclarer incompatibles, donc pip considère la
-# contrainte satisfaite et ne remplace pas les fichiers. Ne jamais déclarer
-# les deux dans un même requirements.txt : elles s'écrasent mutuellement et
-# `import polars` devient inutilisable.
+# ATTENTION si vous avez connu l'ancienne méthode, basée sur polars-lts-cpu :
+# cette distribution est figée à la version 1.33.1 et fournit un module
+# `polars` CONCURRENT, qui s'écrase avec le paquet officiel. Désinstallez-la
+# avant de passer à rtcompat, et ne déclarez jamais les deux dans un même
+# requirements.txt.
+#
+# polars[rtcompat] n'a pas ce défaut : il ajoute un paquet de runtime à côté
+# de polars, sans le remplacer, et suit ses versions.
+
+# ---------------------------------------------------------------------------
+# 7. Un prérequis que les extras ne couvrent pas : pgcrypto
+# ---------------------------------------------------------------------------
+# Les extras installent des paquets Python. Ils ne peuvent rien pour ce que la
+# BASE doit fournir de son côté.
+#
+# Le CDC calcule son empreinte de clé avec digest(), fourni par l'extension
+# PostgreSQL pgcrypto, absente d'une installation nue. ChangeDataCapture le
+# vérifie au démarrage et indique la commande à passer :
+#
+#   CREATE EXTENSION pgcrypto;
+#
+# L'empreinte de ligne, elle, utilise md5() qui est natif : seul SHA2-256
+# impose l'extension. SQL Server n'est pas concerné, il passe par HASHBYTES.
+# Sur une base managée, l'activation demande souvent des droits
+# d'administration : à anticiper avant la mise en production.
 
 logger.info("Fin de la démonstration du modèle d'installation.")

@@ -32,6 +32,24 @@ dest_pg = ads.DbPgsql(
     logger=logger,
 )
 
+
+def resumer(resultats: dict, libelle: str) -> None:
+    """
+    Journalise un résultat de run() sans déverser les lignes rejetées.
+
+    PIÈGE : la clé 'errors' contient les DONNÉES en échec, pas seulement la
+    cause. Journaliser le dictionnaire entier peut produire des milliers de
+    lignes — le DataFrame complet et chaque tuple rejeté. Elle est là pour
+    être rejouée, pas lue.
+    """
+    logger.info(
+        f"{libelle} : {resultats['nb_lines_success']} ligne(s) insérée(s), "
+        f"{resultats['nb_lines_error']} en erreur",
+    )
+    for nom, cause, lignes in resultats["errors"]:
+        logger.warning(f"  {nom} : {cause} sur {len(lignes)} ligne(s)")
+
+
 # ---------------------------------------------------------------------------
 # 1. Source = tableau en mémoire
 # ---------------------------------------------------------------------------
@@ -66,7 +84,7 @@ pipe = ads.Pipeline(
     logger=logger,
 )
 
-print(f"Résultats tableau : {pipe.run()}")
+resumer(pipe.run(), "tableau")
 
 # Différence de comportement à connaître : avec 'tableau', le pipeline ne
 # connaît pas les types SQL de la source. Sans cols_def, Polars infère donc
@@ -78,14 +96,30 @@ print(f"Résultats tableau : {pipe.run()}")
 # ---------------------------------------------------------------------------
 # Même mécanisme : on récupère les données, on les met en forme, on les passe
 # par 'tableau'. get_api_data.py fournit le client d'exemple.
-api = NxOnyxApi(
-    domain=env.API_DOMAIN,
-    username=env.API_USER,
-    password=env.API_PASSWORD,
-    tenantId=env.TENANT_ID,
-)
-
-donnees = api.getTree()
+#
+# L'appel réel n'a lieu que si les variables d'API sont renseignées. On passe
+# par env.get() et non par env.API_DOMAIN : l'accès par ATTRIBUT lève une
+# AttributeError sur une variable absente, alors que get() renvoie None.
+# C'est exactement la différence montrée dans logger/env.py, et elle permet
+# ici de rendre la section optionnelle.
+if env.get("API_DOMAIN"):
+    api = NxOnyxApi(
+        domain=env.API_DOMAIN,
+        username=env.API_USER,
+        password=env.API_PASSWORD,
+        tenantId=env.TENANT_ID,
+    )
+    donnees = api.getTree()
+else:
+    # Charge utile simulée, de la même forme que celle de l'API : une liste
+    # de dictionnaires. La suite de la section reste donc démontrable sans
+    # accès réseau.
+    logger.warning("Variables d'API absentes : on poursuit sur une charge simulée.")
+    donnees = [
+        {"id": 1, "categoryId": 10, "name": "Racine", "isExpanded": True},
+        {"id": 2, "categoryId": 10, "name": "Enfant A", "isExpanded": False},
+        {"id": 3, "categoryId": 20, "name": "Enfant B", "isExpanded": False},
+    ]
 
 # L'API renvoie des DICTIONNAIRES, comme OdooConnector.get(). Le pipeline
 # attend des séquences de valeurs : il faut convertir. Le point délicat est
@@ -128,14 +162,18 @@ destination_api = {
 #
 # C'est la conséquence directe du .get() sur un dictionnaire libre : toute
 # faute de placement ou de frappe passe inaperçue. Relisez vos clés.
+# La table cible doit exister : on la crée depuis cols_def, ce qui permet
+# aussi de typer explicitement une source qui n'a pas de types SQL.
 pipeline_api = ads.Pipeline(
     {
         "tableau": valeurs_tuples,
-        "db_destination": destination_api,
+        "db_destination": {**destination_api,
+                           "cols_def": ["INTEGER", "INTEGER", "VARCHAR(255)", "BOOLEAN"]},
     },
     logger=logger,
 )
+pipeline_api.create_destination_table(drop=True)
 
-print(f"Résultats API : {pipeline_api.run()}")
+resumer(pipeline_api.run(), "API")
 
 dest_pg.disconnect()

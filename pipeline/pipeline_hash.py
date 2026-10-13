@@ -75,7 +75,12 @@ print(source_mysql.insert_bulk(schema="", table=table, cols=cols, rows=utils.dat
 cols_def = [
     "INTEGER", "VARCHAR(255)", "CHAR(100)", "TEXT", "INTEGER", "BIGINT",
     "NUMERIC(18,6)", "NUMERIC(10,2)", "DOUBLE PRECISION", "REAL", "DATE",
-    "TIMESTAMP", "TIMESTAMP", "TIME", "BOOLEAN", "UUID",
+    # is_active est en INTEGER, pas en BOOLEAN : utils.build_data() produit
+    # des 0/1 entiers. Avec une colonne BOOLEAN, PostgreSQL refuse insert et
+    # insert_many ("is of type boolean but expression is of type integer"),
+    # alors qu'insert_bulk passe, COPY acceptant '0'/'1'. Les scripts
+    # d'operations/ ne verraient alors qu'une partie des lignes.
+    "TIMESTAMP", "TIMESTAMP", "TIME", "INTEGER", "UUID",
     "VARCHAR(255)",   # la colonne hash, en dernier
 ]
 

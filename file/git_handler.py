@@ -50,12 +50,14 @@ try:
 except PermissionError as e:
     logger.error(message=f"Permissions insuffisantes : {e}")
 
-# Sur un chemin inexistant, os.access renvoie False : l'erreur porte donc sur
-# les permissions alors que le vrai problème est l'absence du chemin.
+# Un chemin inexistant est désormais distingué d'un droit refusé. Avant la
+# 2026.10, os.access renvoyant False dans les deux cas, l'absence du chemin
+# était signalée comme un problème de permissions : on cherchait une cause
+# qui n'existait pas.
 try:
     gh.check_permissions(path="/chemin/qui/nexiste/pas")
-except PermissionError as e:
-    logger.warning(message=f"Chemin absent, signalé comme permission : {e}")
+except FileNotFoundError as e:
+    logger.warning(message=f"Chemin absent, correctement identifié : {e}")
 
 # ---------------------------------------------------------------------------
 # 3. Cloner ou mettre à jour

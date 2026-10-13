@@ -80,7 +80,9 @@ CREATE TABLE {table} (
 
 # utils.data est désormais construit à la demande : 50 000 lignes, ~3,5 s au
 # premier accès. utils.build_data(nb_lignes=100) pour aller plus vite.
-print(source_mysql.insert_bulk(schema="", table=table, cols=cols, rows=utils.data))
+statut, _, rejets = source_mysql.insert_bulk(
+    schema="", table=table, cols=cols, rows=utils.data)
+logger.info(f"alimentation MySQL -> {statut}, {len(rejets)} lot(s) rejeté(s)")
 dest_pg.sql_exec(query=f"DROP TABLE IF EXISTS {table};")
 dest_pg.sql_exec(query=f"""
 CREATE TABLE {table} (
@@ -158,12 +160,29 @@ pipe = ads.Pipeline(
 # Fournir à la fois 'tableau' et 'db_source' lève un ValueError explicite
 # ("On veut tous le beurre et l'argent du beurre..."). N'en fournir aucun
 # lève "Aucune source de données choisie."
+#
+# Un tableau VIDE, lui, est une source valide : le pipeline ne transfère
+# rien et renvoie nb_lines_success = 0, sans erreur. Avant la 2026.10 il
+# tombait dans le même message que l'absence de source, ce qui envoyait
+# chercher un problème de configuration alors que la source était
+# simplement vide.
+#
+# Conséquence : un transfert de zéro ligne est SILENCIEUX. Si votre source
+# ne devrait jamais être vide, contrôlez-le vous-même en amont :
+#
+#   lignes = df.rows()
+#   if not lignes:
+#       logger.warning("Source vide, rien à transférer")
 
 # ---------------------------------------------------------------------------
 # 6. Exécution et lecture des résultats
 # ---------------------------------------------------------------------------
 resultats = pipe.run()
-print(f"Résultats : {resultats}")
+# ATTENTION à ne pas journaliser le dictionnaire entier : sa clé 'errors'
+# contient les LIGNES rejetées, pas seulement leur cause. Sur un lot de
+# 10 000 lignes en échec, la trace devient illisible.
+logger.info(f"{resultats['nb_lines_success']} ligne(s) insérée(s), "
+            f"{resultats['nb_lines_error']} en erreur")
 
 # run() renvoie toujours un dictionnaire à trois clés :
 #   nb_lines_success  lignes insérées
@@ -193,7 +212,20 @@ if resultats["nb_lines_error"]:
 # nulle sur le premier batch), une réinférence PARTIELLE est faite sur les
 # batchs suivants jusqu'à obtenir un schéma complet.
 #
-# Fournir cols_def évite cette inférence : voir pipeline_schema.py.
+# Une colonne entièrement nulle sur TOUS les batchs reste typée Null, ce
+# qui peut faire échouer l'insertion en destination. operations/read.py
+# montre le phénomène et comment le détecter.
+#
+# À savoir aussi : même avec cols_def, un type SQL absent de la table de
+# correspondance retombe sur Utf8, avec une trace en DEBUG seulement :
+#
+#   DEBUG - Type SQL non reconnu 'NUMERIC(18,6)', fallback en Utf8
+#
+# Ce n'est pas forcément un défaut — pour les décimaux exacts, le texte
+# préserve mieux la valeur qu'un flottant — mais passez les logs en DEBUG
+# au moins une fois pour savoir quelles colonnes sont concernées.
+#
+# Fournir cols_def évite l'inférence : voir pipeline_schema.py.
 
 source_mysql.disconnect()
 dest_pg.disconnect()
