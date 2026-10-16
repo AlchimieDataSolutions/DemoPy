@@ -45,7 +45,7 @@ source_pg = ads.DbPgsql(
 # connect() est indispensable : l'instanciation ne connecte rien.
 source_pg.connect()
 
-# disconnect() ferme la connexion ET remet self.connection à None. À appeler
+# disconnect() ferme la connexion et remet self.connection à None. À appeler
 # dans un finally si le traitement peut lever, sinon la connexion reste
 # ouverte côté serveur jusqu'au timeout.
 source_pg.disconnect()
@@ -61,11 +61,6 @@ source_pg.disconnect()
 #       db.connect()      # échoue : base injoignable
 #   finally:
 #       db.disconnect()   # ne doit pas remplacer l'erreur par une autre
-#
-# Jusqu'à la 2026.10.13, disconnect() appelait _check_connection(), qui
-# ROUVRAIT la connexion avant de la fermer : un second appel ouvrait donc
-# une session pour la refermer aussitôt, soit un aller-retour réseau pour
-# rien.
 
 # ---------------------------------------------------------------------------
 # 3. SQL Server : la clé charset en plus

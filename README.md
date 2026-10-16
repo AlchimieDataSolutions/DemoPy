@@ -7,7 +7,7 @@ fonctionnalité, commenté ligne à ligne, avec les subtilités et les pièges.
 Chaque script est autonome et exécutable seul. Les commentaires font partie de
 la démonstration : lisez-les autant que vous exécutez le code.
 
-- **Version de la librairie ciblée** : `2026.10.13`
+- **Version de la librairie ciblée** : `2026.10.16`
 - **Python** : `>= 3.10`
 
 ## Table des matières
@@ -79,7 +79,7 @@ avertissement, et rien n'est installé.
 
 ```
 $ pip install "adstoolbox[pymssql]"
-WARNING: adstoolbox 2026.10.13 does not provide the extra 'pymssql'
+WARNING: adstoolbox 2026.10.16 does not provide the extra 'pymssql'
 ```
 
 Le nom correct est `mssql`. Les neuf extras valides sont ceux du tableau
@@ -133,7 +133,7 @@ extra tournent avec `pip install adstoolbox` nu.
 | `pipeline/pipeline_upsert.py` | `pgsql` | `operation_type='upsert'`, `conflict_cols`, `insert_method`, types seuls dans `cols_def` |
 | `pipeline/pipeline_hash.py` | `mysql`, `pgsql` | Déduplication par empreinte de ligne |
 | `pipeline/pipeline_schema.py` | `mysql`, `pgsql` | `cols_def`, `create_destination_table`, `sql_defs_to_polars_schema`, repli en `Utf8` des types non reconnus |
-| `pipeline/cdc.py` | `cdc`, `pgsql` | `ChangeDataCapture` exécutable : deux synchronisations scd2 successives sur PostgreSQL, historisation, prérequis `pgcrypto` |
+| `pipeline/cdc.py` | `cdc`, `pgsql` | `ChangeDataCapture` exécutable : deux synchronisations scd2 successives, historisation, prérequis `pgcrypto`, règles pour plusieurs CDC en parallèle |
 
 Les configurations CDC complètes sont dans `pipeline/cdc_use.md`, à côté du
 script.

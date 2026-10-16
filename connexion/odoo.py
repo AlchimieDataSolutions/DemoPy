@@ -19,7 +19,6 @@ env = ads.Env(logger=logger)
 # Les cinq clés sont TOUTES obligatoires. Contrairement aux classes Db* qui
 # utilisent dictionnary.get(), OdooConnector lit dictionnary["clé"] : une clé
 # absente lève un KeyError dès l'instanciation, avant toute connexion.
-# C'est plus sûr, et l'erreur est immédiate.
 odoo = ads.OdooConnector(
     {
         "name": "Odoo Connection",   # libellé libre, sert à __str__ et aux logs

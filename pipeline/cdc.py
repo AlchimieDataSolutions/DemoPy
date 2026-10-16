@@ -201,7 +201,34 @@ for ligne in next(iter(db.sql_query(query=f"""
     logger.info(f"  différentiel : opération {ligne[0]} sur {ligne[1]} ligne(s)")
 
 # ---------------------------------------------------------------------------
-# 7. Les quatre modes
+# 7. Plusieurs CDC en parallèle : la règle à ne pas enfreindre
+# ---------------------------------------------------------------------------
+# Chaque instance doit avoir SES PROPRES objets : table de staging, vue, table
+# CDC et table cible. Deux CDC qui pointeraient la même `cdc_table`
+# s'effaceraient mutuellement leur différentiel — `drop_and_create_cdc_table`
+# la supprime à chaque exécution. Aucune sérialisation ne corrigerait cela :
+# c'est un problème de nommage, pas de concurrence.
+#
+# Partager le SCHÉMA, en revanche, est normal : c'est ce que font les jobs
+# d'un même domaine. Jusqu'à la 2026.10.16, ce partage posait un problème
+# inattendu. Le CDC relisait la structure de sa table avec
+# `metadata.reflect(only=[nom])`, qui énumère TOUT le schéma avant de filtrer
+# côté Python :
+#
+#   SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
+#   WHERE TABLE_SCHEMA = 'nx_cdc' ORDER BY TABLE_NAME
+#
+# Sur SQL Server, cette lecture entrait en interblocage avec le DROP TABLE
+# d'un AUTRE job du même schéma : lecteur et écrivain parcouraient les index
+# de sys.sysschobjs dans des ordres opposés. Deux jobs sans rapport se
+# bloquaient donc l'un l'autre.
+#
+# Depuis la 2026.10.16, la relecture vise une table précise et les conditions
+# d'existence sont portées par le SQL lui-même, sans interrogation préalable
+# du catalogue. Rien à changer dans vos configurations.
+
+# ---------------------------------------------------------------------------
+# 8. Les quatre modes
 # ---------------------------------------------------------------------------
 # append   ajoute les nouvelles lignes, ne touche pas aux existantes
 # scd1     écrase la ligne existante : pas d'historique
